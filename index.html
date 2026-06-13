@@ -470,7 +470,7 @@ const MATCHES = [
 // ════════════════════════════════════════════
 // STORAGE — Firebase Realtime Database (مركزي ومشترك للجميع)
 // ════════════════════════════════════════════
-const FB_URL = 'https://world-cup-2026-d3091-default-rtdb.firebaseio.com';
+const FB_URL = 'https://world-cup-2026-d3091-default-rtdb.europe-west1.firebasedatabase.app';
 
 let DB = { users:{}, predictions:{}, results:{} };
 let currentUser = null;
@@ -482,13 +482,19 @@ async function fbGet(path){
   catch(e){ return undefined; }
 }
 async function fbPut(path,val){
-  try{ await fetch(`${FB_URL}/${path}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)}); return true; }
-  catch(e){ return false; }
+  try{
+    const r=await fetch(`${FB_URL}/${path}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+    if(!r.ok){ console.error('FB write blocked:',r.status,await r.text()); return false; }
+    return true;
+  }catch(e){ console.error('FB write error:',e); return false; }
 }
 // كتابة جزئية (لتوقع/مستخدم واحد) بدون مسح البقية
 async function fbPatch(path,val){
-  try{ await fetch(`${FB_URL}/${path}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)}); return true; }
-  catch(e){ return false; }
+  try{
+    const r=await fetch(`${FB_URL}/${path}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+    if(!r.ok){ console.error('FB write blocked:',r.status,await r.text()); return false; }
+    return true;
+  }catch(e){ console.error('FB write error:',e); return false; }
 }
 
 async function loadDB(){
@@ -518,13 +524,13 @@ async function loadDB(){
   if(rd) await fbPatch('results',toAdd);
 }
 // الحفظ الكامل (للحذف ومسح الكل)
-async function saveUsers()   { await fbPut('users',DB.users); }
-async function savePreds()   { await fbPut('predictions',DB.predictions); }
-async function saveResults() { await fbPut('results',DB.results); }
+async function saveUsers()   { return await fbPut('users',DB.users); }
+async function savePreds()   { return await fbPut('predictions',DB.predictions); }
+async function saveResults() { return await fbPut('results',DB.results); }
 // الحفظ الجزئي (الأكثر أماناً للتعديلات الفردية)
-async function saveUser(key)   { await fbPatch('users',{[key]:DB.users[key]}); }
-async function savePrediction(user){ await fbPatch('predictions',{[user]:DB.predictions[user]}); }
-async function saveResult(id)  { await fbPatch('results',{[id]:DB.results[id]}); }
+async function saveUser(key)   { return await fbPatch('users',{[key]:DB.users[key]}); }
+async function savePrediction(user){ return await fbPatch('predictions',{[user]:DB.predictions[user]}); }
+async function saveResult(id)  { return await fbPatch('results',{[id]:DB.results[id]}); }
 
 
 // ════════════════════════════════════════════
@@ -768,9 +774,13 @@ async function savePred(id){
   const u=currentUser.username;
   if(!DB.predictions[u]) DB.predictions[u]={};
   DB.predictions[u][id]={h,a};
-  await savePrediction(u);
+  const ok = await savePrediction(u);
   const m=MATCHES.find(x=>x.id===id);
-  toast(`تم حفظ توقعك: ${m?.home} ${h}-${a} ${m?.away} ✓`);
+  if(ok){
+    toast(`تم حفظ توقعك: ${m?.home} ${h}-${a} ${m?.away} ✓`);
+  } else {
+    toast('⚠️ تعذّر الحفظ — تحقق من قواعد Firebase');
+  }
   document.getElementById('card-'+id)?.replaceWith(buildCard(m));
   renderLeaderboard();
 }
