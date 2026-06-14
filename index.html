@@ -745,7 +745,7 @@ function buildCard(m){
         else badge=`<span class="pts-badge pts-0">0</span>`;
         return `<div class="all-pred-row${isMe?' me':''}">
           <span class="all-pred-name">${isMe?'⭐ ':''} ${name}</span>
-          <div style="display:flex;align-items:center;gap:8px"><span class="all-pred-score">${pr.h}-${pr.a}</span>${badge}</div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="all-pred-score">${pr.a}-${pr.h}</span>${badge}</div>
         </div>`;
       }).join('');
     predHTML=`<div class="prediction-area">${mySection}${allRows?`<div class="all-preds-section"><div class="all-preds-title">🌍 توقعات الجميع</div>${allRows}</div>`:''}</div>`;
@@ -867,10 +867,10 @@ function openProfile(username){
       else { badge=`<span class="pts-badge" style="background:rgba(122,143,174,.12);color:var(--muted)">⏳</span>`; }
       html+=`<div class="d-pred-row${me?' me':''}" style="${border}">
         <div class="d-pred-teams">${m.hf} ${m.home} <span style="color:var(--muted);font-size:.72rem">vs</span> ${m.away} ${m.af}
-          ${res?`<div class="d-pred-actual">النتيجة: ${res.h}-${res.a}</div>`:`<div class="d-pred-actual">${status==='completed'?'':'لم تُلعب بعد'}</div>`}
+          ${res?`<div class="d-pred-actual">النتيجة: ${res.a}-${res.h}</div>`:`<div class="d-pred-actual">${status==='completed'?'':'لم تُلعب بعد'}</div>`}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="text-align:center"><div style="font-size:.63rem;color:var(--muted)">توقع</div><div class="d-pred-score" style="color:var(--gold)">${pred.h}-${pred.a}</div></div>
+          <div style="text-align:center"><div style="font-size:.63rem;color:var(--muted)">توقع</div><div class="d-pred-score" style="color:var(--gold)">${pred.a}-${pred.h}</div></div>
           ${badge}
         </div>
       </div>`;
