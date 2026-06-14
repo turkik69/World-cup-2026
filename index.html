@@ -208,6 +208,26 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .cmp-h2h-me{background:linear-gradient(135deg,var(--green),#005530);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:.9rem;min-width:28px;transition:width .4s}
 .cmp-h2h-opp{background:rgba(124,58,237,.6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:.9rem;min-width:28px;transition:width .4s}
 .cmp-h2h-legend{display:flex;justify-content:space-between;margin-top:8px;font-size:.72rem;color:var(--muted)}
+
+/* ── SQUAD MODAL ── */
+.team-clickable{cursor:pointer;border-radius:10px;padding:4px;transition:background .15s}
+.team-clickable:hover{background:rgba(201,168,76,.06)}
+.squad-hint{font-size:.6rem;color:var(--gold);opacity:.7;margin-top:2px}
+#squad-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
+#squad-overlay.open{display:flex}
+#squad-drawer{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.15,1);padding-bottom:28px}
+#squad-overlay.open #squad-drawer{transform:translateY(0)}
+#squad-body{padding:0 20px}
+.squad-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.squad-info-item{background:var(--dark);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center}
+.sii-label{font-size:.66rem;color:var(--muted);margin-bottom:4px}
+.sii-val{font-size:.78rem;font-weight:700;color:var(--text)}
+.squad-count{text-align:center;font-size:.8rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.08);border-radius:8px;padding:7px;margin-bottom:12px}
+.squad-pos-title{font-size:.8rem;font-weight:900;color:#a78bfa;margin:14px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.squad-player{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--card2);border-radius:8px;margin-bottom:5px}
+.squad-player-name{font-size:.86rem;font-weight:700;color:var(--text)}
+.squad-player-club{font-size:.72rem;color:var(--muted)}
+.squad-soon{text-align:center;padding:40px 20px}
 #profile-overlay.open{display:flex}
 #profile-drawer{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.15,1);padding-bottom:32px}
 #profile-overlay.open #profile-drawer{transform:translateY(0)}
@@ -419,6 +439,18 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 </div>
 
 <div id="toast"></div>
+
+<!-- SQUAD MODAL -->
+<div id="squad-overlay" onclick="closeSquad(event)">
+  <div id="squad-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-hdr">
+      <h2 id="squad-title">قائمة المنتخب</h2>
+      <button class="drawer-close" onclick="closeSquadDirect()">✕ إغلاق</button>
+    </div>
+    <div id="squad-body"></div>
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════
@@ -939,9 +971,9 @@ function buildCard(m){
   card.innerHTML=`
     <div class="match-meta"><div class="match-badges">${badges}</div><div class="match-time">${formatTime(m.ko)}</div></div>
     <div class="teams-row">
-      <div class="team"><div class="team-flag">${m.hf}</div><div class="team-name">${m.home}</div></div>
+      <div class="team team-clickable" onclick="event.stopPropagation();openSquad('${m.home}')"><div class="team-flag">${m.hf}</div><div class="team-name">${m.home}</div><div class="squad-hint">القائمة ›</div></div>
       <div class="vs-area">${scoreHTML}<div class="venue-label">${m.venue.split('،')[0]}</div></div>
-      <div class="team"><div class="team-flag">${m.af}</div><div class="team-name">${m.away}</div></div>
+      <div class="team team-clickable" onclick="event.stopPropagation();openSquad('${m.away}')"><div class="team-flag">${m.af}</div><div class="team-name">${m.away}</div><div class="squad-hint">القائمة ›</div></div>
     </div>${predHTML}`;
   return card;
 }
@@ -1169,6 +1201,49 @@ function closeCompare(e){ if(e.target===document.getElementById('compare-overlay
 function closeCompareDirect(){ document.getElementById('compare-overlay').classList.remove('open'); document.body.style.overflow=''; }
 
 // ════════════════════════════════════════════
+// SQUAD — قوائم المنتخبات
+// ════════════════════════════════════════════
+function openSquad(teamName){
+  const sq=SQUADS[teamName];
+  const flag=(MATCHES.find(m=>m.home===teamName)?.hf)||(MATCHES.find(m=>m.away===teamName)?.af)||'⚽';
+  document.getElementById('squad-title').textContent=`${flag} ${teamName}`;
+  const body=document.getElementById('squad-body');
+
+  if(!sq){
+    body.innerHTML=`<div class="squad-soon">
+      <div style="font-size:2.5rem;margin-bottom:10px">⏳</div>
+      <div style="font-weight:700;color:var(--gold);margin-bottom:6px">القائمة قيد الإضافة</div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.6">سيتم إضافة قائمة لاعبي ${teamName} الرسمية قريباً.<br>تابعونا!</div>
+    </div>`;
+  } else {
+    const byPos={'حارس':[],'مدافع':[],'وسط':[],'مهاجم':[]};
+    sq.players.forEach(p=>{ (byPos[p.pos]||(byPos[p.pos]=[])).push(p); });
+    const posIcon={'حارس':'🧤','مدافع':'🛡️','وسط':'⚙️','مهاجم':'⚽'};
+    let playersHTML='';
+    Object.entries(byPos).forEach(([pos,arr])=>{
+      if(!arr.length) return;
+      playersHTML+=`<div class="squad-pos-title">${posIcon[pos]||'•'} ${pos} (${arr.length})</div>`;
+      playersHTML+=arr.map(p=>`<div class="squad-player">
+        <span class="squad-player-name">${p.n}</span>
+        <span class="squad-player-club">${p.club}</span>
+      </div>`).join('');
+    });
+    body.innerHTML=`
+      <div class="squad-info">
+        <div class="squad-info-item"><div class="sii-label">المدرب</div><div class="sii-val">👔 ${sq.coach}</div></div>
+        <div class="squad-info-item"><div class="sii-label">الأساسي</div><div class="sii-val">👕 ${sq.colors.home}</div></div>
+        <div class="squad-info-item"><div class="sii-label">الاحتياطي</div><div class="sii-val">👕 ${sq.colors.away}</div></div>
+      </div>
+      <div class="squad-count">📋 ${sq.players.length} لاعباً</div>
+      ${playersHTML}`;
+  }
+  document.getElementById('squad-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeSquad(e){ if(e.target===document.getElementById('squad-overlay'))closeSquadDirect(); }
+function closeSquadDirect(){ document.getElementById('squad-overlay').classList.remove('open'); document.body.style.overflow=''; }
+
+// ════════════════════════════════════════════
 // ADMIN
 // ════════════════════════════════════════════
 function setFilter(f,btn){ adminFilter=f; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderAdminMatches(); }
@@ -1286,6 +1361,46 @@ function updateLiveUI(){
   </div>
   ${pending?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${MATCHES.filter(m=>{const e=new Date(new Date(m.ko).getTime()+105*60*1000);return !DB.results[m.id]&&now()>e;}).slice(0,6).map(m=>`<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:2px 8px;font-size:.7rem;color:#fbbf24">${m.home} vs ${m.away}</span>`).join('')}</div>`:''}`;
 }
+
+// ════════════════════════════════════════════
+// قوائم المنتخبات الرسمية لكأس العالم 2026
+// المصدر: القوائم النهائية المعتمدة (26 لاعباً لكل منتخب)
+// تُضاف المنتخبات تدريجياً — أي منتخب غير موجود يظهر "قريباً"
+// ════════════════════════════════════════════
+const SQUADS = {
+  'البرازيل': {
+    coach: 'كارلو أنشيلوتي',
+    colors: { home: 'أصفر/أخضر', away: 'أزرق' },
+    players: [
+      {n:'أليسون بيكر', pos:'حارس', club:'ليفربول'},
+      {n:'إيدرسون', pos:'حارس', club:'فنربخشة'},
+      {n:'ويفيرتون', pos:'حارس', club:'غريميو'},
+      {n:'ماركينيوس', pos:'مدافع', club:'باريس سان جيرمان'},
+      {n:'دانيلو', pos:'مدافع', club:'فلامنغو'},
+      {n:'أليكس ساندرو', pos:'مدافع', club:'فلامنغو'},
+      {n:'غابرييل ماغالهايش', pos:'مدافع', club:'أرسنال'},
+      {n:'بريمر', pos:'مدافع', club:'يوفنتوس'},
+      {n:'روجر إيبانيز', pos:'مدافع', club:'الأهلي'},
+      {n:'دوغلاس سانتوس', pos:'مدافع', club:'زينيت'},
+      {n:'ليو بيريرا', pos:'مدافع', club:'فلامنغو'},
+      {n:'كاسيميرو', pos:'وسط', club:'مانشستر يونايتد'},
+      {n:'إيدرسون', pos:'وسط', club:'أتالانتا'},
+      {n:'لوكاس باكيتا', pos:'وسط', club:'فلامنغو'},
+      {n:'برونو غيمارايش', pos:'وسط', club:'نيوكاسل'},
+      {n:'فابينيو', pos:'وسط', club:'الاتحاد'},
+      {n:'دانيلو', pos:'وسط', club:'بوتافوغو'},
+      {n:'نيمار', pos:'مهاجم', club:'سانتوس'},
+      {n:'فينيسيوس جونيور', pos:'مهاجم', club:'ريال مدريد'},
+      {n:'رافينيا', pos:'مهاجم', club:'برشلونة'},
+      {n:'غابرييل مارتينيلي', pos:'مهاجم', club:'أرسنال'},
+      {n:'ماتيوس كونيا', pos:'مهاجم', club:'مانشستر يونايتد'},
+      {n:'إندريك', pos:'مهاجم', club:'ليون'},
+      {n:'لويز هنريكي', pos:'مهاجم', club:'زينيت'},
+      {n:'إيغور تياغو', pos:'مهاجم', club:'برينتفورد'},
+      {n:'رايان', pos:'مهاجم', club:'بورنموث'},
+    ]
+  }
+};
 
 // خريطة أسماء الفرق: عربي → إنجليزي (للمطابقة مع مصدر النتائج المجاني)
 const TEAM_EN = {
