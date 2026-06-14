@@ -164,6 +164,15 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 /* ── BADGES & STREAK ── */
 .lb-badges{display:inline-flex;gap:2px;font-size:.95rem}
 .lb-streak{background:rgba(224,52,52,.12);color:#fb923c;font-size:.72rem;font-weight:900;padding:1px 7px;border-radius:10px}
+
+/* ── آخر الترتيب الساخر ── */
+.last-place{display:inline-flex;align-items:center;gap:6px;position:relative}
+.last-emoji{font-size:1.2rem;animation:wobble 1.6s ease-in-out infinite;display:inline-block}
+@keyframes wobble{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+.last-bubble{position:relative;background:#fff;color:#0A1628;font-size:.7rem;font-weight:900;padding:4px 10px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:pop .4s ease-out}
+.last-bubble::after{content:'';position:absolute;left:-5px;top:50%;transform:translateY(-50%);border-width:5px 5px 5px 0;border-style:solid;border-color:transparent #fff transparent transparent}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.last-row td{background:rgba(224,52,52,.04)}
 #profile-badges-bar{padding:0 20px 6px}
 .profile-badges{display:flex;flex-wrap:wrap;gap:6px}
 .profile-badge{font-size:.72rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:4px 11px}
@@ -917,11 +926,16 @@ function renderLeaderboard(){
     const badges=badgesOf(p.u);
     const badgesHTML=badges.length?`<span class="lb-badges">${badges.map(b=>`<span title="${b.t}">${b.e}</span>`).join('')}</span>`:'';
     const streakHTML=streak>=2?`<span class="lb-streak">${streak}🔥</span>`:'';
-    return `<tr class="clickable${isMe?' me-row':''}" onclick="openProfile('${p.u}')">
+    // المتذيّل الساخر: آخر مشارك (إذا كان هناك 2+ مشاركين ولديه توقعات محسوبة)
+    const isLast = (i===players.length-1) && players.length>=2 && done>0;
+    const lastHTML = isLast
+      ? `<span class="last-place"><span class="last-bubble">تراك مسخرة ياولد</span><span class="last-emoji">🤡</span></span>`
+      : '';
+    return `<tr class="clickable${isMe?' me-row':''}${isLast?' last-row':''}" onclick="openProfile('${p.u}')">
       <td class="rank-cell ${rc}">${ri}</td>
       <td>
         <div style="font-weight:${isMe?'900':'600'};color:${isMe?'var(--gold)':'var(--text)'};display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span>${isMe?'⭐ ':''}${p.name}${isMe?' (أنت)':''}</span>${badgesHTML}${streakHTML}
+          <span>${isMe?'⭐ ':''}${p.name}${isMe?' (أنت)':''}</span>${badgesHTML}${streakHTML}${lastHTML}
         </div>
         <div class="player-meta">${done} توقع محسوب · اضغط للتفاصيل ›</div>
       </td>
