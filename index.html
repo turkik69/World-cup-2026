@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -802,7 +803,20 @@ function scorerPts(pred,res){
   });
   return bonus;
 }
-function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v)s+=v; s+=scorerPts(pred,r);} }); return s; }
+function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){ let v=(pts(pred,r)||0)+scorerPts(pred,r); if(id===DB.goldenMatch) v*=2; s+=v; } }); s+=tourneyPts(u); return s; }
+// نقاط توقعات البطولة (البطل/الوصيف/الهداف/أفضل لاعب/أفضل حارس)
+function tourneyPts(u){
+  const t=DB.tourneyPreds?.[u], r=DB.tourneyResults;
+  if(!t||!r) return 0;
+  let s=0;
+  const norm=x=>normName(x);
+  if(t.champion&&r.champion&&norm(t.champion)===norm(r.champion)) s+=10;
+  if(t.runnerup&&r.runnerup&&norm(t.runnerup)===norm(r.runnerup)) s+=5;
+  if(t.topscorer&&r.topscorer&&(norm(t.topscorer).includes(norm(r.topscorer))||norm(r.topscorer).includes(norm(t.topscorer)))) s+=7;
+  if(t.bestplayer&&r.bestplayer&&(norm(t.bestplayer).includes(norm(r.bestplayer))||norm(r.bestplayer).includes(norm(t.bestplayer)))) s+=7;
+  if(t.bestgk&&r.bestgk&&(norm(t.bestgk).includes(norm(r.bestgk))||norm(r.bestgk).includes(norm(t.bestgk)))) s+=5;
+  return s;
+}
 function statOf(u){ const p=DB.predictions[u]||{}; let p3=0,p1=0,p0=0,pend=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v===3)p3++;else if(v===1)p1++;else p0++;}else pend++; }); return {p3,p1,p0,pend}; }
 
 // إحصائيات تفصيلية للألقاب: تعادلات صحيحة، توقعات صحيحة كلية، دقة
@@ -1562,3 +1576,5 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
+```
