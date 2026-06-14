@@ -706,7 +706,7 @@ function buildCard(m){
   else if(status==='soon')   badges+=`<span class="badge badge-soon">⏳ قريباً</span>`;
   else                       badges+=`<span class="badge badge-done">✅ انتهت</span>`;
 
-  const scoreHTML=result?`<div class="score-result">${result.h} - ${result.a}</div>`:`<div class="vs-label">VS</div>`;
+  const scoreHTML=result?`<div class="score-result">${result.a} - ${result.h}</div>`:`<div class="vs-label">VS</div>`;
 
   // prediction section
   let predHTML='';
@@ -715,11 +715,11 @@ function buildCard(m){
     predHTML=`<div class="prediction-area">
       <div class="pred-label">🎯 يُغلق التوقع في: ${formatTime(new Date(new Date(m.ko).getTime()-3600*1000).toISOString())}</div>
       <div class="score-inputs">
-        <span style="font-size:.7rem;color:var(--muted)">${m.home}</span>
-        <div class="score-input-wrap"><button onclick="adj('${m.id}','h',-1)">−</button><input class="score-num" type="number" id="h_${m.id}" value="${ph}" min="0" max="20" oninput="clamp(this)"><button onclick="adj('${m.id}','h',1)">+</button></div>
-        <span style="color:var(--muted);font-weight:900">-</span>
-        <div class="score-input-wrap"><button onclick="adj('${m.id}','a',-1)">−</button><input class="score-num" type="number" id="a_${m.id}" value="${pa}" min="0" max="20" oninput="clamp(this)"><button onclick="adj('${m.id}','a',1)">+</button></div>
         <span style="font-size:.7rem;color:var(--muted)">${m.away}</span>
+        <div class="score-input-wrap"><button onclick="adj('${m.id}','a',-1)">−</button><input class="score-num" type="number" id="a_${m.id}" value="${pa}" min="0" max="20" oninput="clamp(this)"><button onclick="adj('${m.id}','a',1)">+</button></div>
+        <span style="color:var(--muted);font-weight:900">-</span>
+        <div class="score-input-wrap"><button onclick="adj('${m.id}','h',-1)">−</button><input class="score-num" type="number" id="h_${m.id}" value="${ph}" min="0" max="20" oninput="clamp(this)"><button onclick="adj('${m.id}','h',1)">+</button></div>
+        <span style="font-size:.7rem;color:var(--muted)">${m.home}</span>
       </div>
       <button class="save-pred-btn" onclick="savePred('${m.id}')">حفظ التوقع ✓</button>
     </div>`;
