@@ -160,6 +160,38 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 
 /* ── PROFILE DRAWER ── */
 #profile-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
+
+/* ── BADGES & STREAK ── */
+.lb-badges{display:inline-flex;gap:2px;font-size:.95rem}
+.lb-streak{background:rgba(224,52,52,.12);color:#fb923c;font-size:.72rem;font-weight:900;padding:1px 7px;border-radius:10px}
+#profile-badges-bar{padding:0 20px 6px}
+.profile-badges{display:flex;flex-wrap:wrap;gap:6px}
+.profile-badge{font-size:.72rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:4px 11px}
+
+/* ── COMPARE BUTTON & MODAL ── */
+.compare-btn{width:100%;padding:11px;margin-bottom:12px;background:linear-gradient(135deg,rgba(124,58,237,.9),#5B21B6);border:none;border-radius:10px;color:#fff;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer}
+.compare-btn:hover{opacity:.9}
+#compare-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
+#compare-overlay.open{display:flex}
+#compare-drawer{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.15,1);padding-bottom:28px}
+#compare-overlay.open #compare-drawer{transform:translateY(0)}
+.cmp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.cmp-name{flex:1;text-align:center;font-weight:900;font-size:.92rem;color:var(--text)}
+.cmp-name.cmp-me{color:var(--gold)}
+.cmp-vs{color:var(--muted);font-weight:900;font-size:.8rem}
+.cmp-score-big{display:flex;align-items:center;justify-content:space-between;background:var(--dark);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px}
+.cmp-score-big>div:first-child,.cmp-score-big>div:last-child{font-size:2rem;font-weight:900;color:var(--text);flex:1;text-align:center}
+.cmp-score-big>div:nth-child(2){flex:0}
+.cmp-win{color:#4ade80!important}
+.cmp-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border)}
+.cmp-val{flex:1;text-align:center;font-weight:900;font-size:1.05rem;color:var(--text)}
+.cmp-label{flex:1.4;text-align:center;font-size:.78rem;color:var(--muted)}
+.cmp-h2h{margin-top:16px;background:var(--dark);border:1px solid var(--border);border-radius:12px;padding:14px}
+.cmp-h2h-title{font-size:.82rem;font-weight:700;color:var(--gold);margin-bottom:10px;text-align:center}
+.cmp-h2h-bar{display:flex;height:34px;border-radius:8px;overflow:hidden;direction:ltr}
+.cmp-h2h-me{background:linear-gradient(135deg,var(--green),#005530);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:.9rem;min-width:28px;transition:width .4s}
+.cmp-h2h-opp{background:rgba(124,58,237,.6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:.9rem;min-width:28px;transition:width .4s}
+.cmp-h2h-legend{display:flex;justify-content:space-between;margin-top:8px;font-size:.72rem;color:var(--muted)}
 #profile-overlay.open{display:flex}
 #profile-drawer{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.15,1);padding-bottom:32px}
 #profile-overlay.open #profile-drawer{transform:translateY(0)}
@@ -350,6 +382,22 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
     </div>
     <div class="drawer-stats" id="profile-stats"></div>
     <div class="drawer-body" id="profile-body"></div>
+  </div>
+</div>
+
+<!-- COMPARE MODAL -->
+<div id="compare-overlay" onclick="closeCompare(event)">
+  <div id="compare-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-hdr">
+      <h2>⚔️ مقارنة وجهاً لوجه</h2>
+      <button class="drawer-close" onclick="closeCompareDirect()">✕ إغلاق</button>
+    </div>
+    <div style="padding:14px 20px">
+      <label style="font-size:.82rem;color:var(--muted);display:block;margin-bottom:8px">اختر منافساً لمقارنتك به:</label>
+      <select id="compare-select" onchange="renderCompare()" style="width:100%;padding:11px 14px;background:var(--dark);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Cairo',sans-serif;font-size:.95rem;outline:none"></select>
+    </div>
+    <div id="compare-body" style="padding:0 20px 24px"></div>
   </div>
 </div>
 
@@ -658,6 +706,44 @@ function outcome(h,a){ return h>a?'h':a>h?'a':'d'; }
 function pts(pred,res){ if(!res||!pred)return null; const ph=+pred.h,pa=+pred.a; if(ph===res.h&&pa===res.a)return 3; if(outcome(ph,pa)===outcome(res.h,res.a))return 1; return 0; }
 function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v)s+=v;} }); return s; }
 function statOf(u){ const p=DB.predictions[u]||{}; let p3=0,p1=0,p0=0,pend=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v===3)p3++;else if(v===1)p1++;else p0++;}else pend++; }); return {p3,p1,p0,pend}; }
+
+// ترتيب المباريات المنتهية زمنياً لحساب السلسلة
+function chronoResults(u){
+  const p=DB.predictions[u]||{};
+  return Object.entries(p)
+    .filter(([id])=>DB.results[id])
+    .map(([id,pred])=>{ const m=MATCHES.find(x=>x.id===id); return {ko:m?new Date(m.ko).getTime():0, v:pts(pred,DB.results[id])}; })
+    .sort((a,b)=>a.ko-b.ko);
+}
+// السلسلة الحالية: عدد التوقعات الصحيحة المتتالية (نقطة أو أكثر) من الأحدث
+function currentStreak(u){
+  const arr=chronoResults(u); let s=0;
+  for(let i=arr.length-1;i>=0;i--){ if(arr[i].v>0) s++; else break; }
+  return s;
+}
+// أطول سلسلة على الإطلاق
+function bestStreak(u){
+  const arr=chronoResults(u); let best=0,cur=0;
+  arr.forEach(x=>{ if(x.v>0){cur++;best=Math.max(best,cur);} else cur=0; });
+  return best;
+}
+// حساب الألقاب/الشارات لكل مشارك
+function badgesOf(u){
+  const s=statOf(u), tp=totalPts(u), streak=currentStreak(u), best=bestStreak(u);
+  const total=s.p3+s.p1+s.p0;
+  const out=[];
+  // ترتيب المشارك بين الجميع
+  const ranked=Object.keys(DB.users).filter(x=>!DB.users[x].admin)
+    .map(x=>({x,pts:totalPts(x)})).sort((a,b)=>b.pts-a.pts);
+  const rank=ranked.findIndex(r=>r.x===u);
+  if(rank===0 && tp>0) out.push({e:'👑',t:'المتصدّر'});
+  if(s.p3>=3) out.push({e:'🔮',t:'العرّاف'});           // 3+ توقعات دقيقة
+  if(best>=5) out.push({e:'🔥',t:'لا يُقهر'});            // سلسلة 5+
+  if(total>=10 && s.p0===0) out.push({e:'💎',t:'الكمال'}); // 10 بلا خطأ
+  if(s.p3>=1) out.push({e:'🎯',t:'القنّاص'});             // توقع دقيق واحد على الأقل
+  if(total>=20) out.push({e:'🦉',t:'المخضرم'});           // شارك في 20+
+  return out;
+}
 function matchDone(m){ return DB.results[m.id]!==undefined; }
 function matchStatus(m){
   const ko=new Date(m.ko), n=now();
@@ -807,10 +893,11 @@ function renderLeaderboard(){
     document.getElementById('my-stats').innerHTML=`<div class="stat-card" style="grid-column:1/-1"><div style="color:var(--muted);font-size:.85rem">🛡️ أنت مشرف · تدير المسابقة من تبويب الإدارة. الترتيب أدناه لجميع المشاركين.</div></div>`;
   } else {
     const s=statOf(currentUser?.username), myP=totalPts(currentUser?.username);
+    const streak=currentStreak(currentUser?.username);
     document.getElementById('my-stats').innerHTML=`
       <div class="stat-card"><div class="stat-num">${myP}</div><div class="stat-label">نقاطي الإجمالية</div></div>
       <div class="stat-card"><div class="stat-num">${s.p3}</div><div class="stat-label">توقع دقيق 🎯</div></div>
-      <div class="stat-card"><div class="stat-num">${s.p1}</div><div class="stat-label">فائز صحيح ✓</div></div>
+      <div class="stat-card"><div class="stat-num">${streak>0?streak+' 🔥':'—'}</div><div class="stat-label">سلسلة حالية</div></div>
       <div class="stat-card"><div class="stat-num">${Object.keys(DB.predictions[currentUser?.username]||{}).length}</div><div class="stat-label">توقعاتي</div></div>`;
   }
 
@@ -826,15 +913,28 @@ function renderLeaderboard(){
     const ri=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
     const isMe=p.u===currentUser?.username;
     const done=Object.entries(DB.predictions[p.u]||{}).filter(([id])=>DB.results[id]).length;
+    const streak=currentStreak(p.u);
+    const badges=badgesOf(p.u);
+    const badgesHTML=badges.length?`<span class="lb-badges">${badges.map(b=>`<span title="${b.t}">${b.e}</span>`).join('')}</span>`:'';
+    const streakHTML=streak>=2?`<span class="lb-streak">${streak}🔥</span>`:'';
     return `<tr class="clickable${isMe?' me-row':''}" onclick="openProfile('${p.u}')">
       <td class="rank-cell ${rc}">${ri}</td>
-      <td><div style="font-weight:${isMe?'900':'600'};color:${isMe?'var(--gold)':'var(--text)'}">${isMe?'⭐ ':''} ${p.name}${isMe?' (أنت)':''}</div><div class="player-meta">${done} توقع محسوب · اضغط للتفاصيل ›</div></td>
+      <td>
+        <div style="font-weight:${isMe?'900':'600'};color:${isMe?'var(--gold)':'var(--text)'};display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span>${isMe?'⭐ ':''}${p.name}${isMe?' (أنت)':''}</span>${badgesHTML}${streakHTML}
+        </div>
+        <div class="player-meta">${done} توقع محسوب · اضغط للتفاصيل ›</div>
+      </td>
       <td class="pts-cell">${p.pts}</td>
     </tr>`;
   }).join('');
 
+  const compareBtn = (!currentUser?.isAdmin && players.length>1)
+    ? `<button class="compare-btn" onclick="openCompare()">⚔️ قارن نفسك بمنافس</button>` : '';
+
   document.getElementById('lb-container').innerHTML=`
     <div class="lb-hint">🔒 توقعات كل مشارك مخفية حتى انتهاء المباراة · اضغط على أي اسم لرؤية سجله</div>
+    ${compareBtn}
     <table class="lb-table"><thead><tr><th style="text-align:center;width:52px">المركز</th><th>المتسابق</th><th style="text-align:center;width:70px">النقاط</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -847,10 +947,20 @@ function openProfile(username){
   const p=totalPts(username), s=statOf(username);
 
   document.getElementById('profile-title').textContent=(isMe?'⭐ سجلي – ':'')+u.name;
+  const streak=currentStreak(username), best=bestStreak(username);
+  const badges=badgesOf(username);
+  const badgesBar = badges.length
+    ? `<div class="profile-badges">${badges.map(b=>`<span class="profile-badge">${b.e} ${b.t}</span>`).join('')}</div>`
+    : '';
   document.getElementById('profile-stats').innerHTML=`
     <div class="d-stat"><div class="n">${p}</div><div class="l">مجموع النقاط</div></div>
     <div class="d-stat"><div class="n">${s.p3}</div><div class="l">توقع دقيق 🎯</div></div>
-    <div class="d-stat"><div class="n">${s.p1}</div><div class="l">فائز صحيح ✓</div></div>`;
+    <div class="d-stat"><div class="n">${best>0?best+' 🔥':'—'}</div><div class="l">أطول سلسلة</div></div>`;
+  // أدرج شريط الشارات بعد الإحصائيات
+  const statsEl=document.getElementById('profile-stats');
+  let bb=document.getElementById('profile-badges-bar');
+  if(bb) bb.remove();
+  if(badgesBar){ statsEl.insertAdjacentHTML('afterend', `<div id="profile-badges-bar">${badgesBar}</div>`); }
 
   const preds=DB.predictions[username]||{};
   const completedIds=new Set(MATCHES.filter(m=>matchStatus(m)==='completed').map(m=>m.id));
@@ -900,6 +1010,73 @@ function openProfile(username){
 function showDrawer(){ document.getElementById('profile-overlay').classList.add('open'); document.body.style.overflow='hidden'; }
 function closeProfile(e){ if(e.target===document.getElementById('profile-overlay'))closeProfileDirect(); }
 function closeProfileDirect(){ document.getElementById('profile-overlay').classList.remove('open'); document.body.style.overflow=''; }
+
+// ════════════════════════════════════════════
+// COMPARE — مقارنة وجهاً لوجه
+// ════════════════════════════════════════════
+function openCompare(){
+  const me=currentUser?.username;
+  const others=Object.keys(DB.users).filter(u=>!DB.users[u].admin && u!==me);
+  if(!others.length){ toast('لا يوجد منافسون بعد'); return; }
+  const sel=document.getElementById('compare-select');
+  sel.innerHTML=others.map(u=>`<option value="${u}">${DB.users[u].name}</option>`).join('');
+  renderCompare();
+  document.getElementById('compare-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function renderCompare(){
+  const me=currentUser?.username;
+  const opp=document.getElementById('compare-select').value;
+  if(!opp) return;
+  const myName=DB.users[me].name, oppName=DB.users[opp].name;
+  const myPts=totalPts(me), oppPts=totalPts(opp);
+  const myS=statOf(me), oppS=statOf(opp);
+  const myStreak=currentStreak(me), oppStreak=currentStreak(opp);
+
+  // المباريات المنتهية التي توقّعها الاثنان (مواجهة مباشرة)
+  const completed=MATCHES.filter(m=>matchStatus(m)==='completed');
+  let myWins=0, oppWins=0, ties=0, common=0;
+  completed.forEach(m=>{
+    const mp=DB.predictions[me]?.[m.id], op=DB.predictions[opp]?.[m.id];
+    if(mp&&op){ common++; const mv=pts(mp,DB.results[m.id]), ov=pts(op,DB.results[m.id]); if(mv>ov)myWins++; else if(ov>mv)oppWins++; else ties++; }
+  });
+
+  const bar=(a,b)=>{ const t=a+b; const pa=t?Math.round(a/t*100):50; return pa; };
+  const row=(label,mv,ov,suffix='')=>{
+    const win=mv>ov, lose=mv<ov;
+    return `<div class="cmp-row">
+      <div class="cmp-val ${win?'cmp-win':''}">${mv}${suffix}</div>
+      <div class="cmp-label">${label}</div>
+      <div class="cmp-val ${lose?'cmp-win':''}">${ov}${suffix}</div>
+    </div>`;
+  };
+
+  document.getElementById('compare-body').innerHTML=`
+    <div class="cmp-head">
+      <div class="cmp-name cmp-me">⭐ ${myName}</div>
+      <div class="cmp-vs">VS</div>
+      <div class="cmp-name">${oppName}</div>
+    </div>
+    <div class="cmp-score-big">
+      <div class="${myPts>oppPts?'cmp-win':''}">${myPts}</div>
+      <div style="color:var(--muted);font-size:.8rem">النقاط</div>
+      <div class="${oppPts>myPts?'cmp-win':''}">${oppPts}</div>
+    </div>
+    ${row('توقع دقيق 🎯', myS.p3, oppS.p3)}
+    ${row('فائز صحيح ✓', myS.p1, oppS.p1)}
+    ${row('السلسلة الحالية', myStreak, oppStreak, '🔥')}
+    ${row('عدد التوقعات', Object.keys(DB.predictions[me]||{}).length, Object.keys(DB.predictions[opp]||{}).length)}
+    <div class="cmp-h2h">
+      <div class="cmp-h2h-title">🥊 المواجهة المباشرة (${common} مباراة مشتركة)</div>
+      <div class="cmp-h2h-bar">
+        <div class="cmp-h2h-me" style="width:${bar(myWins,oppWins)}%">${myWins}</div>
+        <div class="cmp-h2h-opp" style="width:${100-bar(myWins,oppWins)}%">${oppWins}</div>
+      </div>
+      <div class="cmp-h2h-legend"><span>فزتَ ${myWins}</span>${ties?`<span>تعادل ${ties}</span>`:''}<span>فاز ${oppWins}</span></div>
+    </div>`;
+}
+function closeCompare(e){ if(e.target===document.getElementById('compare-overlay'))closeCompareDirect(); }
+function closeCompareDirect(){ document.getElementById('compare-overlay').classList.remove('open'); document.body.style.overflow=''; }
 
 // ════════════════════════════════════════════
 // ADMIN
