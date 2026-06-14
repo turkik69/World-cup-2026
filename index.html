@@ -717,6 +717,29 @@ function pts(pred,res){ if(!res||!pred)return null; const ph=+pred.h,pa=+pred.a;
 function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v)s+=v;} }); return s; }
 function statOf(u){ const p=DB.predictions[u]||{}; let p3=0,p1=0,p0=0,pend=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v===3)p3++;else if(v===1)p1++;else p0++;}else pend++; }); return {p3,p1,p0,pend}; }
 
+// إحصائيات تفصيلية للألقاب: تعادلات صحيحة، توقعات صحيحة كلية، دقة
+function detailOf(u){
+  const p=DB.predictions[u]||{};
+  let correctDraws=0, totalCorrect=0, totalScored=0;
+  Object.entries(p).forEach(([id,pred])=>{
+    const r=DB.results[id]; if(!r) return;
+    totalScored++;
+    const v=pts(pred,r);
+    if(v>0) totalCorrect++;
+    // تعادل صحيح: توقّع تعادلاً وانتهت المباراة بتعادل
+    if(pred.h===pred.a && r.h===r.a) correctDraws++;
+  });
+  const accuracy = totalScored ? Math.round(totalCorrect/totalScored*100) : 0;
+  return {correctDraws, totalCorrect, totalScored, accuracy};
+}
+// صاحب أعلى قيمة في فئة معيّنة (للألقاب التنافسية مثل "ملك التعادل")
+function leaderIn(metricFn){
+  const parts=Object.keys(DB.users).filter(x=>!DB.users[x].admin);
+  let best=0, leaders=[];
+  parts.forEach(x=>{ const v=metricFn(x); if(v>best){best=v;leaders=[x];} else if(v===best&&v>0)leaders.push(x); });
+  return {best, leaders};
+}
+
 // ترتيب المباريات المنتهية زمنياً لحساب السلسلة
 function chronoResults(u){
   const p=DB.predictions[u]||{};
@@ -739,19 +762,34 @@ function bestStreak(u){
 }
 // حساب الألقاب/الشارات لكل مشارك
 function badgesOf(u){
-  const s=statOf(u), tp=totalPts(u), streak=currentStreak(u), best=bestStreak(u);
+  const s=statOf(u), d=detailOf(u), tp=totalPts(u), streak=currentStreak(u), best=bestStreak(u);
   const total=s.p3+s.p1+s.p0;
   const out=[];
   // ترتيب المشارك بين الجميع
   const ranked=Object.keys(DB.users).filter(x=>!DB.users[x].admin)
     .map(x=>({x,pts:totalPts(x)})).sort((a,b)=>b.pts-a.pts);
   const rank=ranked.findIndex(r=>r.x===u);
+
+  // ── ألقاب تنافسية (تُمنح لصاحب الأعلى فقط) ──
+  const drawLead = leaderIn(x=>detailOf(x).correctDraws);
+  const correctLead = leaderIn(x=>detailOf(x).totalCorrect);
+  const exactLead = leaderIn(x=>statOf(x).p3);
+  const streakLead = leaderIn(x=>bestStreak(x));
+
   if(rank===0 && tp>0) out.push({e:'👑',t:'المتصدّر'});
-  if(s.p3>=3) out.push({e:'🔮',t:'العرّاف'});           // 3+ توقعات دقيقة
-  if(best>=5) out.push({e:'🔥',t:'لا يُقهر'});            // سلسلة 5+
-  if(total>=10 && s.p0===0) out.push({e:'💎',t:'الكمال'}); // 10 بلا خطأ
-  if(s.p3>=1) out.push({e:'🎯',t:'القنّاص'});             // توقع دقيق واحد على الأقل
-  if(total>=20) out.push({e:'🦉',t:'المخضرم'});           // شارك في 20+
+  if(drawLead.leaders.includes(u) && drawLead.best>=2) out.push({e:'🤝',t:'ملك التعادل'});
+  if(correctLead.leaders.includes(u) && correctLead.best>=3) out.push({e:'✅',t:'ملك التوقعات الصحيحة'});
+  if(exactLead.leaders.includes(u) && exactLead.best>=2) out.push({e:'🎯',t:'ملك التوقع الدقيق'});
+  if(streakLead.leaders.includes(u) && streakLead.best>=4) out.push({e:'⚡',t:'ملك السلاسل'});
+
+  // ── ألقاب إنجاز (تُمنح لكل من يحققها) ──
+  if(s.p3>=3) out.push({e:'🔮',t:'العرّاف'});               // 3+ توقعات دقيقة
+  if(best>=5) out.push({e:'🔥',t:'لا يُقهر'});               // سلسلة 5+
+  if(total>=10 && s.p0===0) out.push({e:'💎',t:'الكمال'});  // 10 بلا خطأ
+  if(d.accuracy>=80 && total>=8) out.push({e:'📊',t:'القنّاص الذهبي'}); // دقة 80%+
+  if(total>=20) out.push({e:'🦉',t:'المخضرم'});             // 20+ توقع
+  if(d.correctDraws>=3) out.push({e:'⚖️',t:'حكيم التعادل'}); // 3+ تعادلات صحيحة
+
   return out;
 }
 function matchDone(m){ return DB.results[m.id]!==undefined; }
