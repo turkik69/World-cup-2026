@@ -162,18 +162,24 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 #profile-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
 
 /* ── BADGES & STREAK ── */
-.lb-badges{display:inline-flex;gap:4px;flex-wrap:wrap}
-.lb-badge-tag{font-size:.66rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.28);border-radius:20px;padding:2px 9px;white-space:nowrap}
+.lb-badges{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;justify-content:flex-start}
+.lb-badge-ico{font-size:.8rem;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .lb-streak{background:rgba(224,52,52,.12);color:#fb923c;font-size:.72rem;font-weight:900;padding:1px 7px;border-radius:10px}
 
 /* ── آخر الترتيب الساخر ── */
 .last-place{display:inline-flex;align-items:center;gap:6px;position:relative}
-.last-emoji{font-size:1.2rem;animation:wobble 1.6s ease-in-out infinite;display:inline-block}
+.last-emoji{font-size:.95rem;animation:wobble 1.6s ease-in-out infinite;display:inline-block}
 @keyframes wobble{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-.last-bubble{position:relative;background:#fff;color:#0A1628;font-size:.7rem;font-weight:900;padding:4px 10px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:pop .4s ease-out}
-.last-bubble::after{content:'';position:absolute;left:-5px;top:50%;transform:translateY(-50%);border-width:5px 5px 5px 0;border-style:solid;border-color:transparent #fff transparent transparent}
+.last-bubble{position:relative;background:#fff;color:#0A1628;font-size:.62rem;font-weight:900;padding:3px 8px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:pop .4s ease-out}
+.last-bubble::after{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);border-width:4px 4px 4px 0;border-style:solid;border-color:transparent #fff transparent transparent}
 @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .last-row td{background:rgba(224,52,52,.04)}
+.scorer-box{margin-top:10px}
+.scorer-label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:5px}
+.scorer-input{width:100%;padding:9px 12px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:.82rem;outline:none;text-align:right}
+.scorer-input:focus{border-color:var(--gold)}
+.scorer-bonus{background:rgba(74,222,128,.12);color:#4ade80;font-size:.7rem;font-weight:900;padding:2px 8px;border-radius:10px;margin-right:5px}
+.scorers-line{font-size:.74rem;color:#4ade80;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:8px;padding:7px 11px;margin-bottom:8px}
 #profile-badges-bar{padding:0 20px 6px}
 .profile-badges{display:flex;flex-wrap:wrap;gap:6px}
 .profile-badge{font-size:.72rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:4px 11px}
@@ -340,6 +346,7 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
         <div class="rule-item"><div class="rule-pts r3">3</div><div><div class="rule-desc">توقع دقيق للنتيجة الكاملة</div><div class="rule-sub">مثال: توقعت 2-1 وانتهت 2-1 ✅</div></div></div>
         <div class="rule-item"><div class="rule-pts r1">1</div><div><div class="rule-desc">توقع صحيح للفائز بنتيجة مختلفة</div><div class="rule-sub">مثال: توقعت 2-0 وانتهت 3-1 أو تعادل بتعادل ✅</div></div></div>
         <div class="rule-item"><div class="rule-pts r0">0</div><div><div class="rule-desc">توقع خاطئ</div><div class="rule-sub">مثال: توقعت فوز فريق وفاز الآخر ❌</div></div></div>
+        <div class="rule-item"><div class="rule-pts" style="background:rgba(74,222,128,.2);color:#4ade80">+1</div><div><div class="rule-desc">توقع المسجّل (اختياري)</div><div class="rule-sub">نقطة إضافية عن كل لاعب تتوقّع تسجيله ويسجّل فعلاً · تُحتسب دائماً حتى لو كانت النتيجة خاطئة ⚽</div></div></div>
       </div>
       <div class="rules-box">
         <h3>⏰ نظام فتح وإغلاق التوقعات</h3>
@@ -714,7 +721,23 @@ function formatDate(iso){ const d=mkt(iso); const days=['الأحد','الاثن
 function formatTime(iso){ const d=mkt(iso); return `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} مسقط`; }
 function outcome(h,a){ return h>a?'h':a>h?'a':'d'; }
 function pts(pred,res){ if(!res||!pred)return null; const ph=+pred.h,pa=+pred.a; if(ph===res.h&&pa===res.a)return 3; if(outcome(ph,pa)===outcome(res.h,res.a))return 1; return 0; }
-function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v)s+=v;} }); return s; }
+// تطبيع اسم اللاعب للمقارنة (إزالة مسافات/تشكيل بسيط)
+function normName(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,' ').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه'); }
+// نقاط المسجّلين: +1 لكل لاعب متوقَّع سجّل فعلاً (تُحتسب دائماً، مستقلة عن النتيجة)
+function scorerPts(pred,res){
+  if(!res||!pred||!Array.isArray(pred.ps)||!Array.isArray(res.scorers)) return 0;
+  const actual=res.scorers.map(normName).filter(Boolean);
+  let bonus=0;
+  // كل اسم متوقَّع صحيح = نقطة (بلا تكرار للاسم نفسه)
+  const used=[];
+  pred.ps.forEach(name=>{
+    const n=normName(name); if(!n) return;
+    const idx=actual.findIndex((a,k)=>!used.includes(k) && (a.includes(n)||n.includes(a)));
+    if(idx>=0){ used.push(idx); bonus++; }
+  });
+  return bonus;
+}
+function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v)s+=v; s+=scorerPts(pred,r);} }); return s; }
 function statOf(u){ const p=DB.predictions[u]||{}; let p3=0,p1=0,p0=0,pend=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v===3)p3++;else if(v===1)p1++;else p0++;}else pend++; }); return {p3,p1,p0,pend}; }
 
 // إحصائيات تفصيلية للألقاب: تعادلات صحيحة، توقعات صحيحة كلية، دقة
@@ -765,9 +788,10 @@ function badgesOf(u){
   const s=statOf(u), d=detailOf(u), tp=totalPts(u), streak=currentStreak(u), best=bestStreak(u);
   const total=s.p3+s.p1+s.p0;
   const out=[];
-  // ترتيب المشارك بين الجميع
+  // ترتيب المشارك بين الجميع (بنفس ترتيب اللوحة: نقاط ثم عدد التوقعات)
   const ranked=Object.keys(DB.users).filter(x=>!DB.users[x].admin)
-    .map(x=>({x,pts:totalPts(x)})).sort((a,b)=>b.pts-a.pts);
+    .map(x=>({x,pts:totalPts(x),preds:Object.keys(DB.predictions[x]||{}).length}))
+    .sort((a,b)=>{ if(b.pts!==a.pts)return b.pts-a.pts; return b.preds-a.preds; });
   const rank=ranked.findIndex(r=>r.x===u);
 
   // ── ألقاب تنافسية (تُمنح لصاحب الأعلى فقط) ──
@@ -859,6 +883,7 @@ function buildCard(m){
   let predHTML='';
   if(status==='open'){
     const ph=myPred?.h??0, pa=myPred?.a??0;
+    const psVal=(myPred?.ps||[]).join('، ');
     predHTML=`<div class="prediction-area">
       <div class="pred-label">🎯 يُغلق التوقع في: ${formatTime(new Date(new Date(m.ko).getTime()-3600*1000).toISOString())}</div>
       <div class="score-inputs">
@@ -867,6 +892,10 @@ function buildCard(m){
         <span style="color:var(--muted);font-weight:900">-</span>
         <div class="score-input-wrap"><button onclick="adj('${m.id}','h',-1)">−</button><input class="score-num" type="number" id="h_${m.id}" value="${ph}" min="0" max="20" oninput="clamp(this)"><button onclick="adj('${m.id}','h',1)">+</button></div>
         <span style="font-size:.7rem;color:var(--muted)">${m.home}</span>
+      </div>
+      <div class="scorer-box">
+        <label class="scorer-label">⚽ توقّع المسجّلين (اختياري · +1 لكل مسجّل صحيح)</label>
+        <input class="scorer-input" id="ps_${m.id}" value="${psVal}" placeholder="أسماء اللاعبين مفصولة بفاصلة، مثال: فينيسيوس، رافينيا">
       </div>
       <button class="save-pred-btn" onclick="savePred('${m.id}')">حفظ التوقع ✓</button>
     </div>`;
@@ -878,7 +907,10 @@ function buildCard(m){
       if(myPts===3) badge=`<span class="pts-badge pts-3">+3 🎯</span>`;
       else if(myPts===1) badge=`<span class="pts-badge pts-1">+1 ✓</span>`;
       else badge=`<span class="pts-badge pts-0">0 ✗</span>`;
-      mySection=`<div class="my-pred-display"><div><div class="pred-mine-label">توقعي</div><div class="pred-mine-score">${m.home} ${myPred.h}-${myPred.a} ${m.away}</div></div>${badge}</div>`;
+      const sb=scorerPts(myPred,result);
+      const sbHTML=sb>0?`<span class="scorer-bonus">⚽ +${sb} مسجّل</span>`:'';
+      const psShow=(myPred.ps&&myPred.ps.length)?`<div style="font-size:.7rem;color:var(--muted);margin-top:3px">توقّعت: ${myPred.ps.join('، ')}</div>`:'';
+      mySection=`<div class="my-pred-display"><div><div class="pred-mine-label">توقعي</div><div class="pred-mine-score">${m.home} ${myPred.h}-${myPred.a} ${m.away}</div>${psShow}</div><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}${sbHTML}</div></div>`;
     }
     // show ALL predictions
     const allRows=Object.entries(DB.predictions)
@@ -896,7 +928,8 @@ function buildCard(m){
         </div>`;
       }).join('');
     const predCount = Object.values(DB.predictions).filter(p=>p[m.id]!==undefined).length;
-    predHTML=`<div class="prediction-area">${mySection}${allRows?`<details class="all-preds-details"><summary class="all-preds-summary"><span>🌍 توقعات الجميع (${predCount})</span><span class="chevron">▾</span></summary><div class="all-preds-section">${allRows}</div></details>`:''}</div>`;
+    const scorersLine=(result.scorers&&result.scorers.length)?`<div class="scorers-line">⚽ المسجّلون: ${result.scorers.join('، ')}</div>`:'';
+    predHTML=`<div class="prediction-area">${scorersLine}${mySection}${allRows?`<details class="all-preds-details"><summary class="all-preds-summary"><span>🌍 توقعات الجميع (${predCount})</span><span class="chevron">▾</span></summary><div class="all-preds-section">${allRows}</div></details>`:''}</div>`;
   } else if(myPred){
     // locked — show only my pred
     let badge=`<span class="pts-badge" style="background:rgba(122,143,174,.1);color:var(--muted)">⏳</span>`;
@@ -919,9 +952,12 @@ function clamp(i){ const v=+i.value; if(isNaN(v)||v<0)i.value=0; else if(v>20)i.
 async function savePred(id){
   const h=Math.max(0,+document.getElementById('h_'+id)?.value||0);
   const a=Math.max(0,+document.getElementById('a_'+id)?.value||0);
+  const psRaw=document.getElementById('ps_'+id)?.value||'';
+  const ps=psRaw.split(/[،,]/).map(s=>s.trim()).filter(Boolean).slice(0,6);
   const u=currentUser.username;
   if(!DB.predictions[u]) DB.predictions[u]={};
   DB.predictions[u][id]={h,a};
+  if(ps.length) DB.predictions[u][id].ps=ps;
   const ok = await savePrediction(u);
   const m=MATCHES.find(x=>x.id===id);
   if(ok){
@@ -963,7 +999,7 @@ function renderLeaderboard(){
     const done=Object.entries(DB.predictions[p.u]||{}).filter(([id])=>DB.results[id]).length;
     const streak=currentStreak(p.u);
     const badges=badgesOf(p.u);
-    const badgesHTML=badges.length?`<span class="lb-badges">${badges.map(b=>`<span class="lb-badge-tag">${b.e} ${b.t}</span>`).join('')}</span>`:'';
+    const badgesHTML=badges.length?`<span class="lb-badges">${badges.map(b=>`<span class="lb-badge-ico" title="${b.t}">${b.e}</span>`).join('')}</span>`:'';
     const streakHTML=streak>=2?`<span class="lb-streak">${streak}🔥</span>`:'';
     // المتذيّل الساخر: آخر مشارك (إذا كان هناك 2+ مشاركين ولديه توقعات محسوبة)
     const isLast = (i===players.length-1) && players.length>=2 && done>0;
@@ -973,8 +1009,9 @@ function renderLeaderboard(){
     return `<tr class="clickable${isMe?' me-row':''}${isLast?' last-row':''}" onclick="openProfile('${p.u}')">
       <td class="rank-cell ${rc}">${ri}</td>
       <td>
+        ${badgesHTML}
         <div style="font-weight:${isMe?'900':'600'};color:${isMe?'var(--gold)':'var(--text)'};display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span>${isMe?'⭐ ':''}${p.name}${isMe?' (أنت)':''}</span>${badgesHTML}${streakHTML}${lastHTML}
+          <span>${isMe?'⭐ ':''}${p.name}${isMe?' (أنت)':''}</span>${streakHTML}${lastHTML}
         </div>
         <div class="player-meta">${done} توقع محسوب · اضغط للتفاصيل ›</div>
       </td>
@@ -1155,6 +1192,7 @@ function renderAdminMatches(){
   document.getElementById('admin-matches').innerHTML=list.map(m=>{
     const r=DB.results[m.id];
     const badges=(r?`<span class="result-badge">${r.h}-${r.a}</span>`:'')+(r?.auto?`<span class="auto-badge">🌐 تلقائي</span>`:'');
+    const scorersVal=(r?.scorers||[]).join('، ');
     return `<div class="admin-match-item">
       <div class="admin-match-title">${badges}${m.home} vs ${m.away} · ${formatDate(m.ko)}</div>
       <div class="admin-score-row">
@@ -1166,6 +1204,10 @@ function renderAdminMatches(){
         <button class="btn-admin" onclick="adminSave('${m.id}')">حفظ</button>
         ${r?`<button class="btn-danger" onclick="adminDel('${m.id}')">حذف</button>`:''}
       </div>
+      <div style="margin-top:8px">
+        <label style="font-size:.72rem;color:#a78bfa;display:block;margin-bottom:4px">⚽ المسجّلون الفعليون (لاحتساب نقاط توقع المسجّلين)</label>
+        <input class="scorer-input" id="asc_${m.id}" value="${scorersVal}" placeholder="أسماء المسجّلين مفصولة بفاصلة">
+      </div>
     </div>`;
   }).join('');
 }
@@ -1174,7 +1216,12 @@ async function adminSave(id){
   const h=parseInt(document.getElementById('ah_'+id)?.value);
   const a=parseInt(document.getElementById('aa_'+id)?.value);
   if(isNaN(h)||isNaN(a)||h<0||a<0){ toast('أدخل نتيجة صحيحة'); return; }
-  DB.results[id]={h,a,auto:false}; await saveResult(id);
+  const scRaw=document.getElementById('asc_'+id)?.value||'';
+  const scorers=scRaw.split(/[،,]/).map(s=>s.trim()).filter(Boolean);
+  const prev=DB.results[id]||{};
+  DB.results[id]={h,a,auto:prev.auto||false}; 
+  if(scorers.length) DB.results[id].scorers=scorers;
+  await saveResult(id);
   toast('✅ تم حفظ النتيجة'); renderAdmin(); renderMatches(); renderLeaderboard();
 }
 async function adminDel(id){
