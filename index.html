@@ -996,29 +996,74 @@ function updateLiveUI(){
   ${pending?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${MATCHES.filter(m=>{const e=new Date(new Date(m.ko).getTime()+105*60*1000);return !DB.results[m.id]&&now()>e;}).slice(0,6).map(m=>`<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:2px 8px;font-size:.7rem;color:#fbbf24">${m.home} vs ${m.away}</span>`).join('')}</div>`:''}`;
 }
 
+// خريطة أسماء الفرق: عربي → إنجليزي (للمطابقة مع مصدر النتائج المجاني)
+const TEAM_EN = {
+  'المكسيك':'Mexico','جنوب أفريقيا':'South Africa','كوريا الجنوبية':'South Korea','التشيك':'Czech Republic',
+  'كندا':'Canada','البوسنة والهرسك':'Bosnia and Herzegovina','الولايات المتحدة':'United States','باراجواي':'Paraguay',
+  'قطر':'Qatar','سويسرا':'Switzerland','البرازيل':'Brazil','المغرب':'Morocco','هايتي':'Haiti','اسكتلندا':'Scotland',
+  'أستراليا':'Australia','تركيا':'Turkey','ألمانيا':'Germany','كوراساو':'Curacao','هولندا':'Netherlands','اليابان':'Japan',
+  'كوت ديفوار':'Ivory Coast','الإكوادور':'Ecuador','السويد':'Sweden','تونس':'Tunisia','إسبانيا':'Spain','الرأس الأخضر':'Cape Verde',
+  'بلجيكا':'Belgium','مصر':'Egypt','السعودية':'Saudi Arabia','أوروغواي':'Uruguay','إيران':'Iran','نيوزيلندا':'New Zealand',
+  'فرنسا':'France','السنغال':'Senegal','العراق':'Iraq','النرويج':'Norway','الأرجنتين':'Argentina','الجزائر':'Algeria',
+  'النمسا':'Austria','الأردن':'Jordan','البرتغال':'Portugal','الكونغو الديمقراطية':'DR Congo','إنجلترا':'England','كرواتيا':'Croatia',
+  'غانا':'Ghana','بنما':'Panama','أوزبكستان':'Uzbekistan','كولومبيا':'Colombia'
+};
+// مطابقة مرنة للأسماء الإنجليزية (يتعامل مع اختلافات التسمية في المصدر)
+function enAliases(en){
+  const a=[en.toLowerCase()];
+  const alt={'ivory coast':['côte d\'ivoire','cote d\'ivoire'],'turkey':['türkiye','turkiye'],
+    'united states':['usa','united states of america'],'dr congo':['d.r. congo','congo dr','democratic republic of the congo'],
+    'south korea':['korea republic','korea','republic of korea'],'curacao':['curaçao'],'czech republic':['czechia']};
+  if(alt[en.toLowerCase()]) a.push(...alt[en.toLowerCase()]);
+  return a;
+}
+
 async function checkLive(manual=false){
   if(liveStatus.checking)return;
-  const batch=MATCHES.filter(m=>{ const e=new Date(new Date(m.ko).getTime()+105*60*1000); return !DB.results[m.id]&&now()>e; }).slice(0,6);
-  if(!batch.length){ if(manual)toast('لا توجد مباريات تحتاج تحديثاً'); return; }
+  // المباريات التي بدأت منذ 105 دقيقة على الأقل وما زالت بلا نتيجة
+  const pending=MATCHES.filter(m=>{ const e=new Date(new Date(m.ko).getTime()+105*60*1000); return !DB.results[m.id]&&now()>e&&m.id.startsWith('m'); });
+  if(!pending.length){ if(manual)toast('لا توجد مباريات تحتاج تحديثاً'); return; }
   liveStatus.checking=true; liveStatus.state='checking'; updateLiveUI();
-  const lines=batch.map(m=>`ID=${m.id} | ${m.home} vs ${m.away} | ${new Date(m.ko).toISOString().split('T')[0]}`).join('\n');
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      model:'claude-sonnet-4-6',max_tokens:1000,
-      tools:[{type:'web_search_20250305',name:'web_search'}],
-      messages:[{role:'user',content:`Search for FINAL scores of these FIFA World Cup 2026 matches. Return ONLY a JSON array, no markdown: [{"id":"m5","h":1,"a":0}]. Only include confirmed FINAL scores. If unsure, omit.\n\n${lines}`}]
-    })});
+    // جلب البيانات المجانية من openfootball (بدون مفتاح API)
+    const res=await fetch('https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json?t='+Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
     const data=await res.json();
-    const text=(data.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
-    const arr=text.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-    if(arr){
-      const parsed=JSON.parse(arr[0]); let n=0, names=[];
-      parsed.forEach(r=>{ if(!r.id||typeof r.h!=='number'||typeof r.a!=='number')return; if(r.h<0||r.h>20||r.a<0||r.a>20)return; if(!batch.find(m=>m.id===r.id))return; if(DB.results[r.id])return; DB.results[r.id]={h:r.h,a:r.a,auto:true,at:Date.now()}; names.push(r); n++; });
-      if(n>0){ await saveResults(); renderMatches(); renderLeaderboard(); if(currentUser?.isAdmin)renderAdmin(); toast(`🔄 ${n} نتيجة جديدة: ${MATCHES.find(m=>m.id===names[0].id)?.home} ${names[0].h}-${names[0].a}`); liveStatus.lastFound=Date.now(); }
-      else if(manual) toast('⏳ لم تُعثر على نتائج جديدة مؤكدة');
-    } else if(manual) toast('⏳ لا نتائج جديدة حتى الآن');
+    const srcMatches=data.matches||[];
+    let n=0, names=[];
+
+    pending.forEach(m=>{
+      const t1=TEAM_EN[m.home], t2=TEAM_EN[m.away];
+      if(!t1||!t2) return;
+      const a1=enAliases(t1), a2=enAliases(t2);
+      // ابحث عن المباراة المطابقة (بنفس الفريقين بأي ترتيب) ولها نتيجة نهائية
+      const found=srcMatches.find(s=>{
+        if(!s.score||!s.score.ft) return false;
+        const s1=(s.team1||'').toLowerCase(), s2=(s.team2||'').toLowerCase();
+        const match12 = a1.some(x=>s1.includes(x)||x.includes(s1)) && a2.some(x=>s2.includes(x)||x.includes(s2));
+        const match21 = a1.some(x=>s2.includes(x)||x.includes(s2)) && a2.some(x=>s1.includes(x)||x.includes(s1));
+        return match12||match21;
+      });
+      if(!found) return;
+      // حدّد النتيجة بالترتيب الصحيح (مضيفنا = home)
+      const s1=(found.team1||'').toLowerCase();
+      const homeIsTeam1 = a1.some(x=>s1.includes(x)||x.includes(s1));
+      const ft=found.score.ft; // [team1, team2]
+      const hg = homeIsTeam1 ? ft[0] : ft[1];
+      const ag = homeIsTeam1 ? ft[1] : ft[0];
+      if(typeof hg!=='number'||typeof ag!=='number') return;
+      DB.results[m.id]={h:hg,a:ag,auto:true,at:Date.now()};
+      names.push({m,h:hg,a:ag}); n++;
+    });
+
+    if(n>0){
+      await saveResults(); renderMatches(); renderLeaderboard();
+      if(currentUser?.isAdmin)renderAdmin();
+      toast(`🔄 ${n} نتيجة جديدة: ${names[0].m.home} ${names[0].h}-${names[0].a} ${names[0].m.away}`);
+      liveStatus.lastFound=Date.now();
+    } else if(manual){ toast('⏳ لا توجد نتائج نهائية جديدة في المصدر بعد'); }
     liveStatus.state='done'; liveStatus.lastCheck=Date.now();
-  }catch(e){ liveStatus.state='error'; if(manual)toast('⚠️ خطأ في الاتصال'); }
+  }catch(e){ console.error('Live fetch error:',e); liveStatus.state='error'; if(manual)toast('⚠️ تعذّر جلب النتائج — جرّب الإدخال اليدوي'); }
   finally{ liveStatus.checking=false; updateLiveUI(); }
 }
 
