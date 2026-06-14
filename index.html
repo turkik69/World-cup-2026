@@ -2,8 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>تحدي كأس العالم 2026 – مسابقة التوقعات</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00693E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="تحدي 2026">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 :root{
@@ -122,6 +128,13 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 /* ── ALL PREDS (after match) ── */
 .all-preds-section{margin-top:10px}
 .all-preds-title{font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:7px}
+.all-preds-details{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.all-preds-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:.78rem;font-weight:700;color:var(--gold);padding:8px 12px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);border-radius:9px;user-select:none}
+.all-preds-summary::-webkit-details-marker{display:none}
+.all-preds-summary .chevron{transition:transform .25s;font-size:.9rem;color:var(--muted)}
+.all-preds-details[open] .all-preds-summary{border-radius:9px 9px 0 0;margin-bottom:0}
+.all-preds-details[open] .all-preds-summary .chevron{transform:rotate(180deg)}
+.all-preds-details[open] .all-preds-section{border:1px solid rgba(201,168,76,.12);border-top:none;border-radius:0 0 9px 9px;padding:8px;margin-top:0}
 .all-pred-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:8px;margin-bottom:4px;background:rgba(255,255,255,.02);gap:8px}
 .all-pred-row.me{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18)}
 .all-pred-name{font-size:.8rem;font-weight:600;flex:1}
@@ -748,7 +761,8 @@ function buildCard(m){
           <div style="display:flex;align-items:center;gap:8px"><span class="all-pred-score">${pr.a}-${pr.h}</span>${badge}</div>
         </div>`;
       }).join('');
-    predHTML=`<div class="prediction-area">${mySection}${allRows?`<div class="all-preds-section"><div class="all-preds-title">🌍 توقعات الجميع</div>${allRows}</div>`:''}</div>`;
+    const predCount = Object.values(DB.predictions).filter(p=>p[m.id]!==undefined).length;
+    predHTML=`<div class="prediction-area">${mySection}${allRows?`<details class="all-preds-details"><summary class="all-preds-summary"><span>🌍 توقعات الجميع (${predCount})</span><span class="chevron">▾</span></summary><div class="all-preds-section">${allRows}</div></details>`:''}</div>`;
   } else if(myPred){
     // locked — show only my pred
     let badge=`<span class="pts-badge" style="background:rgba(122,143,174,.1);color:var(--muted)">⏳</span>`;
@@ -1079,6 +1093,15 @@ async function autoRefresh(){
 // ════════════════════════════════════════════
 let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ════════════════════════════════════════════
+// PWA — تسجيل Service Worker
+// ════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW:',e));
+  });
+}
 </script>
 </body>
 </html>
