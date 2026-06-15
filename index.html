@@ -91,6 +91,25 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .match-badges{display:flex;gap:5px;flex-wrap:wrap}
 .badge{font-size:.68rem;padding:3px 9px;border-radius:20px;font-weight:700}
 .badge-group{background:rgba(201,168,76,.15);color:var(--gold)}
+.badge-golden{background:linear-gradient(135deg,#C9A84C,#F4D03F);color:#0A1628;font-weight:900;animation:goldpulse 2s ease-in-out infinite}
+@keyframes goldpulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.5)}50%{box-shadow:0 0 8px 2px rgba(201,168,76,.5)}}
+.tourney-card{background:linear-gradient(160deg,rgba(124,58,237,.12),rgba(10,22,40,.6));border:1.5px solid rgba(124,58,237,.35);border-radius:16px;padding:16px;margin-bottom:18px}
+.tourney-hdr{font-size:1.05rem;font-weight:900;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.tourney-locked{font-size:.72rem;background:rgba(239,68,68,.15);color:#f87171;padding:3px 10px;border-radius:12px}
+.tourney-note{font-size:.72rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.tourney-field{margin-bottom:13px}
+.tourney-field label{display:block;font-size:.84rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.t-pts{font-size:.68rem;color:#a78bfa;font-weight:700;margin-right:4px}
+.tourney-field select,.tourney-field input{width:100%;padding:10px 12px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:.88rem;outline:none}
+.tourney-field select:focus,.tourney-field input:focus{border-color:var(--gold)}
+.tourney-save{width:100%;padding:12px;margin-top:6px;background:linear-gradient(135deg,#7C3AED,#5B21B6);border:none;border-radius:10px;color:#fff;font-family:'Cairo',sans-serif;font-size:.92rem;font-weight:800;cursor:pointer}
+.tourney-save:hover{opacity:.9}
+.tourney-locked-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.86rem;padding:7px 0;border-bottom:1px solid var(--border)}
+.tourney-locked-row b{color:var(--gold)}
+.t-correct{color:#4ade80;font-weight:900;font-size:.78rem}
+.t-wrong{color:#f87171;font-weight:900;font-size:.78rem}
+.admin-t-label{display:block;font-size:.78rem;font-weight:700;color:#a78bfa;margin:8px 0 4px}
+.admin-t-inp{width:100%;padding:9px 11px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:.85rem;outline:none;margin-bottom:8px}
 .badge-open{background:rgba(0,105,62,.2);color:#4ade80}
 .badge-locked{background:rgba(224,52,52,.15);color:#f87171}
 .badge-soon{background:rgba(217,119,6,.15);color:#fbbf24}
@@ -374,6 +393,13 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
         <div class="rule-item"><div class="rule-pts" style="background:rgba(74,222,128,.2);color:#4ade80">+1</div><div><div class="rule-desc">توقع المسجّل (اختياري)</div><div class="rule-sub">نقطة إضافية عن كل لاعب تتوقّع تسجيله ويسجّل فعلاً · تُحتسب دائماً حتى لو كانت النتيجة خاطئة ⚽</div></div></div>
       </div>
       <div class="rules-box">
+        <h3>🏆 توقعات البطولة (مرة واحدة قبل نهاية دور المجموعات)</h3>
+        <div class="rule-item"><div class="rule-pts r3" style="background:rgba(124,58,237,.2);color:#a78bfa">10</div><div><div class="rule-desc">توقع بطل كأس العالم</div><div class="rule-sub">10 نقاط لمن يصيب المنتخب البطل 🏆</div></div></div>
+        <div class="rule-item"><div class="rule-pts r3" style="background:rgba(124,58,237,.2);color:#a78bfa">5</div><div><div class="rule-desc">توقع طرفي النهائي</div><div class="rule-sub">5 نقاط · يجب تطابق المنتخبين معاً (بأي ترتيب) ⚔️</div></div></div>
+        <div class="rule-item"><div class="rule-pts r3" style="background:rgba(124,58,237,.2);color:#a78bfa">5</div><div><div class="rule-desc">توقع هداف البطولة</div><div class="rule-sub">5 نقاط لمن يصيب هداف كأس العالم ⚽</div></div></div>
+        <div class="rule-item" style="border:none"><div class="rule-pts" style="background:rgba(239,68,68,.15);color:#f87171;font-size:.9rem">🔒</div><div><div class="rule-desc">توقعات البطولة تُدخل مرة واحدة وتُقفل</div><div class="rule-sub">لا يمكن تعديلها بعد الحفظ · آخر موعد نهاية دور المجموعات</div></div></div>
+      </div>
+      <div class="rules-box">
         <h3>⏰ نظام فتح وإغلاق التوقعات</h3>
         <div class="rule-item"><div class="rule-pts" style="background:rgba(22,163,74,.2);color:#4ade80;font-size:.9rem">🟢</div><div><div class="rule-desc">تُفتح التوقعات قبل 24 ساعة من المباراة</div></div></div>
         <div class="rule-item"><div class="rule-pts" style="background:rgba(224,52,52,.1);color:#f87171;font-size:.9rem">🔴</div><div><div class="rule-desc">تُغلق التوقعات قبل ساعة من الانطلاق</div></div></div>
@@ -400,6 +426,10 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
             <button class="filter-btn" onclick="setFilter('all',this)">جميع المباريات</button>
           </div>
           <div id="admin-matches"></div>
+        </div>
+        <div class="admin-sec">
+          <div class="admin-sec-title">🏆 نتائج توقعات البطولة</div>
+          <div id="admin-tourney"></div>
         </div>
         <div class="admin-sec">
           <div class="admin-sec-title">👥 المشاركون</div>
@@ -588,7 +618,7 @@ const MATCHES = [
 // ════════════════════════════════════════════
 const FB_URL = 'https://world-cup-2026-d3091-default-rtdb.europe-west1.firebasedatabase.app';
 
-let DB = { users:{}, predictions:{}, results:{} };
+let DB = { users:{}, predictions:{}, results:{}, tourneyPreds:{}, tourneyResults:null, goldenMatch:null };
 let currentUser = null;
 let adminFilter = 'pending';
 let liveStatus = { state:'idle', checking:false, lastCheck:null, lastFound:null };
@@ -614,7 +644,7 @@ async function fbPatch(path,val){
 }
 
 async function loadDB(){
-  const [u,p,r] = await Promise.all([fbGet('users'),fbGet('predictions'),fbGet('results')]);
+  const [u,p,r,tp,tr,gm] = await Promise.all([fbGet('users'),fbGet('predictions'),fbGet('results'),fbGet('tourneyPreds'),fbGet('tourneyResults'),fbGet('goldenMatch')]);
   // فشل الاتصال
   if(u===undefined && p===undefined && r===undefined){
     document.getElementById('loading-overlay').innerHTML=`<div style="text-align:center;padding:40px;max-width:420px">
@@ -628,6 +658,9 @@ async function loadDB(){
   DB.users       = u || {};
   DB.predictions = p || {};
   DB.results     = r || {};
+  DB.tourneyPreds = tp || {};
+  DB.tourneyResults = tr || null;
+  DB.goldenMatch = gm || null;
   // ضمان حساب المشرف
   if(!DB.users[ADMIN_USER]){
     DB.users[ADMIN_USER]={pass:ADMIN_PASS,name:ADMIN_NAME,admin:true,at:Date.now()};
@@ -647,6 +680,9 @@ async function saveResults() { return await fbPut('results',DB.results); }
 async function saveUser(key)   { return await fbPatch('users',{[key]:DB.users[key]}); }
 async function savePrediction(user){ return await fbPatch('predictions',{[user]:DB.predictions[user]}); }
 async function saveResult(id)  { return await fbPatch('results',{[id]:DB.results[id]}); }
+async function saveTourneyPred(u){ return await fbPatch('tourneyPreds',{[u]:DB.tourneyPreds[u]}); }
+async function saveTourneyResults(){ return await fbPut('tourneyResults',DB.tourneyResults); }
+async function saveGolden(){ return await fbPut('goldenMatch',DB.goldenMatch); }
 
 
 // ════════════════════════════════════════════
@@ -802,18 +838,40 @@ function scorerPts(pred,res){
   });
   return bonus;
 }
-function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){ let v=(pts(pred,r)||0)+scorerPts(pred,r); if(id===DB.goldenMatch) v*=2; s+=v; } }); s+=tourneyPts(u); return s; }
-// نقاط توقعات البطولة (البطل/الوصيف/الهداف/أفضل لاعب/أفضل حارس)
+function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){ s+=(pts(pred,r)||0)+scorerPts(pred,r); } }); s+=tourneyPts(u); return s; }
+// قائمة كل المنتخبات المشاركة (مرتبة أبجدياً) مع علم كل منتخب
+function allTeams(){
+  const map={};
+  MATCHES.forEach(m=>{ if(m.stage==='دور المجموعات'){ if(!map[m.home])map[m.home]=m.hf; if(!map[m.away])map[m.away]=m.af; } });
+  return Object.keys(map).sort((a,b)=>a.localeCompare(b,'ar')).map(name=>({name,flag:map[name]}));
+}
+// آخر موعد لتوقعات البطولة = آخر مباراة في دور المجموعات
+function tourneyDeadline(){
+  const groupMatches=MATCHES.filter(m=>m.stage==='دور المجموعات');
+  if(!groupMatches.length) return null;
+  return groupMatches.reduce((max,m)=> new Date(m.ko)>new Date(max)?m.ko:max, groupMatches[0].ko);
+}
+// هل أُغلق باب توقعات البطولة؟ (بدأت آخر مباراة مجموعات)
+function tourneyClosed(){
+  const dl=tourneyDeadline(); if(!dl) return false;
+  return now() >= new Date(dl);
+}
+
+// نقاط توقعات البطولة: البطل 10، طرفا النهائي (تطابق الاثنين) 5، الهداف 5
 function tourneyPts(u){
   const t=DB.tourneyPreds?.[u], r=DB.tourneyResults;
   if(!t||!r) return 0;
   let s=0;
   const norm=x=>normName(x);
+  // البطل
   if(t.champion&&r.champion&&norm(t.champion)===norm(r.champion)) s+=10;
-  if(t.runnerup&&r.runnerup&&norm(t.runnerup)===norm(r.runnerup)) s+=5;
-  if(t.topscorer&&r.topscorer&&(norm(t.topscorer).includes(norm(r.topscorer))||norm(r.topscorer).includes(norm(t.topscorer)))) s+=7;
-  if(t.bestplayer&&r.bestplayer&&(norm(t.bestplayer).includes(norm(r.bestplayer))||norm(r.bestplayer).includes(norm(t.bestplayer)))) s+=7;
-  if(t.bestgk&&r.bestgk&&(norm(t.bestgk).includes(norm(r.bestgk))||norm(r.bestgk).includes(norm(t.bestgk)))) s+=5;
+  // طرفا النهائي: يجب تطابق المنتخبين معاً (بأي ترتيب)
+  if(t.finalists&&r.finalists&&Array.isArray(t.finalists)&&Array.isArray(r.finalists)){
+    const tf=t.finalists.map(norm).sort(), rf=r.finalists.map(norm).sort();
+    if(tf.length===2&&rf.length===2&&tf[0]===rf[0]&&tf[1]===rf[1]) s+=5;
+  }
+  // الهداف
+  if(t.topscorer&&r.topscorer&&(norm(t.topscorer).includes(norm(r.topscorer))||norm(r.topscorer).includes(norm(t.topscorer)))) s+=5;
   return s;
 }
 function statOf(u){ const p=DB.predictions[u]||{}; let p3=0,p1=0,p0=0,pend=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){const v=pts(pred,r);if(v===3)p3++;else if(v===1)p1++;else p0++;}else pend++; }); return {p3,p1,p0,pend}; }
@@ -918,8 +976,85 @@ function showTab(tab, btn){
 // ════════════════════════════════════════════
 // RENDER MATCHES
 // ════════════════════════════════════════════
+function buildTourneyCard(){
+  const u=currentUser.username;
+  const closed=tourneyClosed();
+  const myT=DB.tourneyPreds[u]||null;
+  const locked = closed || (myT&&myT.locked);
+  const teams=allTeams();
+  const teamOpts=(sel)=>`<option value="">— اختر منتخباً —</option>`+teams.map(t=>`<option value="${t.name}" ${sel===t.name?'selected':''}>${t.flag} ${t.name}</option>`).join('');
+
+  const card=document.createElement('div');
+  card.className='tourney-card';
+
+  // إذا كان مقفلاً أو سبق التوقع: اعرض التوقعات للقراءة
+  if(locked && myT){
+    const res=DB.tourneyResults;
+    const champRight = res&&res.champion&&normName(res.champion)===normName(myT.champion||'');
+    const finRight = res&&res.finalists&&myT.finalists&&(()=>{ const a=(myT.finalists||[]).map(normName).sort(),b=(res.finalists||[]).map(normName).sort(); return a.length===2&&b.length===2&&a[0]===b[0]&&a[1]===b[1]; })();
+    const scRight = res&&res.topscorer&&myT.topscorer&&(normName(myT.topscorer).includes(normName(res.topscorer))||normName(res.topscorer).includes(normName(myT.topscorer)));
+    const mark=(ok)=> res? (ok?'<span class="t-correct">✓ +':'<span class="t-wrong">✗ '):'';
+    card.innerHTML=`
+      <div class="tourney-hdr">🏆 توقعات البطولة <span class="tourney-locked">🔒 مقفل</span></div>
+      <div class="tourney-locked-row"><span>🏆 البطل:</span> <b>${myT.champion||'—'}</b> ${res?(champRight?'<span class="t-correct">✓ +10</span>':'<span class="t-wrong">✗</span>'):''}</div>
+      <div class="tourney-locked-row"><span>⚔️ طرفا النهائي:</span> <b>${(myT.finalists||[]).join(' و ')||'—'}</b> ${res?(finRight?'<span class="t-correct">✓ +5</span>':'<span class="t-wrong">✗</span>'):''}</div>
+      <div class="tourney-locked-row"><span>⚽ الهداف:</span> <b>${myT.topscorer||'—'}</b> ${res?(scRight?'<span class="t-correct">✓ +5</span>':'<span class="t-wrong">✗</span>'):''}</div>`;
+    return card;
+  }
+
+  // إذا أُغلق الباب ولم يتوقّع
+  if(closed && !myT){
+    card.innerHTML=`<div class="tourney-hdr">🏆 توقعات البطولة <span class="tourney-locked">🔒 أُغلق الباب</span></div>
+      <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:8px">انتهى وقت توقعات البطولة (أُغلقت بنهاية دور المجموعات).</div>`;
+    return card;
+  }
+
+  // نموذج الإدخال (مفتوح)
+  const dl=tourneyDeadline();
+  card.innerHTML=`
+    <div class="tourney-hdr">🏆 توقعات البطولة</div>
+    <div class="tourney-note">توقّع مرة واحدة فقط · يُقفل نهائياً بعد الحفظ · آخر موعد: نهاية دور المجموعات</div>
+    <div class="tourney-field">
+      <label>🏆 بطل كأس العالم <span class="t-pts">10 نقاط</span></label>
+      <select id="t-champion">${teamOpts(myT?.champion)}</select>
+    </div>
+    <div class="tourney-field">
+      <label>⚔️ طرفا النهائي <span class="t-pts">5 نقاط (يجب تطابق الاثنين)</span></label>
+      <div style="display:flex;gap:8px">
+        <select id="t-final1" style="flex:1">${teamOpts(myT?.finalists?.[0])}</select>
+        <select id="t-final2" style="flex:1">${teamOpts(myT?.finalists?.[1])}</select>
+      </div>
+    </div>
+    <div class="tourney-field">
+      <label>⚽ هداف كأس العالم <span class="t-pts">5 نقاط</span></label>
+      <input id="t-scorer" value="${myT?.topscorer||''}" placeholder="اسم اللاعب">
+    </div>
+    <button class="tourney-save" onclick="saveTourney()">🔒 حفظ وإقفال توقعاتي</button>`;
+  return card;
+}
+
+async function saveTourney(){
+  const u=currentUser.username;
+  const champion=document.getElementById('t-champion').value;
+  const f1=document.getElementById('t-final1').value;
+  const f2=document.getElementById('t-final2').value;
+  const topscorer=document.getElementById('t-scorer').value.trim();
+  if(!champion||!f1||!f2||!topscorer){ toast('⚠️ أكمل جميع التوقعات الثلاثة'); return; }
+  if(f1===f2){ toast('⚠️ اختر منتخبين مختلفين لطرفي النهائي'); return; }
+  if(!confirm('⚠️ تأكيد التوقعات؟ لا يمكن تعديلها بعد الحفظ!')) return;
+  DB.tourneyPreds[u]={champion, finalists:[f1,f2], topscorer, locked:true, at:Date.now()};
+  const ok=await saveTourneyPred(u);
+  if(ok){ toast('🏆 تم حفظ وإقفال توقعات البطولة'); renderMatches(); renderLeaderboard(); }
+  else { toast('⚠️ تعذّر الحفظ'); delete DB.tourneyPreds[u]; }
+}
+
 function renderMatches(){
   const c=document.getElementById('matches-container'); c.innerHTML='';
+  // بطاقة توقعات البطولة (للمشاركين فقط، أعلى الصفحة)
+  if(currentUser && !currentUser.isAdmin){
+    const tc=buildTourneyCard();
+    if(tc) c.appendChild(tc);
+  }
   const days={};
   MATCHES.forEach(m=>{
     const d=mkt(m.ko), dk=`${m.stage}__${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
@@ -1303,7 +1438,36 @@ function renderAdmin(){
     <div class="stat-card"><div class="stat-num">${MATCHES.length-ts}</div><div class="stat-label">بانتظار</div></div>`;
   updateLiveUI();
   renderAdminMatches();
+  renderAdminTourney();
   renderAdminPlayers();
+}
+
+function renderAdminTourney(){
+  const teams=allTeams();
+  const r=DB.tourneyResults||{};
+  const teamOpts=(sel)=>`<option value="">—</option>`+teams.map(t=>`<option value="${t.name}" ${sel===t.name?'selected':''}>${t.flag} ${t.name}</option>`).join('');
+  const count=Object.keys(DB.tourneyPreds||{}).length;
+  document.getElementById('admin-tourney').innerHTML=`
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:10px">${count} مشارك أدخل توقعات البطولة · أدخل النتائج النهائية لاحتساب النقاط</div>
+    <label class="admin-t-label">🏆 البطل</label>
+    <select id="r-champion" class="admin-t-inp">${teamOpts(r.champion)}</select>
+    <label class="admin-t-label">⚔️ طرفا النهائي</label>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="r-final1" class="admin-t-inp" style="margin:0">${teamOpts(r.finalists?.[0])}</select>
+      <select id="r-final2" class="admin-t-inp" style="margin:0">${teamOpts(r.finalists?.[1])}</select>
+    </div>
+    <label class="admin-t-label">⚽ الهداف</label>
+    <input id="r-scorer" class="admin-t-inp" value="${r.topscorer||''}" placeholder="اسم الهداف">
+    <button class="btn-admin" onclick="saveTourneyRes()" style="width:100%;margin-top:6px">حفظ نتائج البطولة 🏆</button>`;
+}
+async function saveTourneyRes(){
+  const champion=document.getElementById('r-champion').value;
+  const f1=document.getElementById('r-final1').value, f2=document.getElementById('r-final2').value;
+  const topscorer=document.getElementById('r-scorer').value.trim();
+  DB.tourneyResults={champion:champion||null, finalists:(f1&&f2)?[f1,f2]:null, topscorer:topscorer||null};
+  const ok=await saveTourneyResults();
+  if(ok){ toast('🏆 تم حفظ نتائج البطولة'); renderAdmin(); renderMatches(); renderLeaderboard(); }
+  else toast('⚠️ تعذّر الحفظ');
 }
 
 function renderAdminMatches(){
@@ -1405,7 +1569,8 @@ function updateLiveUI(){
       <button class="btn-admin" onclick="checkLive(true)" ${checking?'disabled':''}>🔄 جلب الآن</button>
     </div>
   </div>
-  ${pending?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${MATCHES.filter(m=>{const e=new Date(new Date(m.ko).getTime()+105*60*1000);return !DB.results[m.id]&&now()>e;}).slice(0,6).map(m=>`<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:2px 8px;font-size:.7rem;color:#fbbf24">${m.home} vs ${m.away}</span>`).join('')}</div>`:''}`;
+  ${pending?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${MATCHES.filter(m=>{const e=new Date(new Date(m.ko).getTime()+105*60*1000);return !DB.results[m.id]&&now()>e;}).slice(0,6).map(m=>`<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:2px 8px;font-size:.7rem;color:#fbbf24">${m.home} vs ${m.away}</span>`).join('')}</div>`:''}
+  <div style="margin-top:10px;font-size:.7rem;color:var(--muted);line-height:1.5;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:8px;padding:8px 10px">💡 الجلب التلقائي يحاول من مصدر مجاني قد يتأخر في التحديث. الأضمن والأسرع: أدخل النتيجة يدوياً من الأسفل فور انتهاء المباراة.</div>`;
 }
 
 // ════════════════════════════════════════════
