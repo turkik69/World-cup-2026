@@ -93,7 +93,12 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .badge-group{background:rgba(201,168,76,.15);color:var(--gold)}
 .badge-golden{background:linear-gradient(135deg,#C9A84C,#F4D03F);color:#0A1628;font-weight:900;animation:goldpulse 2s ease-in-out infinite}
 @keyframes goldpulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.5)}50%{box-shadow:0 0 8px 2px rgba(201,168,76,.5)}}
-.tourney-card{background:linear-gradient(160deg,rgba(124,58,237,.12),rgba(10,22,40,.6));border:1.5px solid rgba(124,58,237,.35);border-radius:16px;padding:16px;margin-bottom:18px}
+.tourney-card{background:linear-gradient(160deg,rgba(124,58,237,.12),rgba(10,22,40,.6));border:1.5px solid rgba(124,58,237,.35);border-radius:16px;margin-bottom:18px;overflow:hidden}
+.tourney-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:1rem;font-weight:900;color:var(--gold);padding:15px 18px;user-select:none}
+.tourney-summary::-webkit-details-marker{display:none}
+.tourney-summary .chevron{transition:transform .25s;font-size:1.1rem;color:var(--muted)}
+.tourney-card[open] .tourney-summary .chevron{transform:rotate(180deg)}
+.tourney-body{padding:0 16px 16px}
 .tourney-hdr{font-size:1.05rem;font-weight:900;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .tourney-locked{font-size:.72rem;background:rgba(239,68,68,.15);color:#f87171;padding:3px 10px;border-radius:12px}
 .tourney-note{font-size:.72rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
@@ -155,6 +160,11 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .finished-details[open] .finished-summary{border-radius:14px 14px 0 0;margin-bottom:0}
 .finished-details[open] .finished-summary .chevron{transform:rotate(180deg)}
 .finished-inner{border:1.5px solid rgba(201,168,76,.12);border-top:none;border-radius:0 0 14px 14px;padding:12px}
+.admin-finished-details{margin-top:10px}
+.admin-finished-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:.88rem;font-weight:700;color:#4ade80;padding:11px 14px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:10px;user-select:none}
+.admin-finished-summary::-webkit-details-marker{display:none}
+.admin-finished-summary .chevron{transition:transform .25s;color:var(--muted)}
+.admin-finished-details[open] .admin-finished-summary .chevron{transform:rotate(180deg)}
 .all-preds-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:.78rem;font-weight:700;color:var(--gold);padding:8px 12px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);border-radius:9px;user-select:none}
 .all-preds-summary::-webkit-details-marker{display:none}
 .all-preds-summary .chevron{transition:transform .25s;font-size:.9rem;color:var(--muted)}
@@ -938,8 +948,10 @@ function buildTourneyCard(){
   const teams=allTeams();
   const teamOpts=(sel)=>`<option value="">— اختر منتخباً —</option>`+teams.map(t=>`<option value="${t.name}" ${sel===t.name?'selected':''}>${t.flag} ${t.name}</option>`).join('');
 
-  const card=document.createElement('div');
-  card.className='tourney-card';
+  const details=document.createElement('details');
+  details.className='tourney-card';
+  let bodyHTML='';
+  let summaryLabel='🏆 توقعات البطولة';
 
   // إذا كان مقفلاً أو سبق التوقع: اعرض التوقعات للقراءة
   if(locked && myT){
@@ -947,44 +959,41 @@ function buildTourneyCard(){
     const champRight = res&&res.champion&&normName(res.champion)===normName(myT.champion||'');
     const finRight = res&&res.finalists&&myT.finalists&&(()=>{ const a=(myT.finalists||[]).map(normName).sort(),b=(res.finalists||[]).map(normName).sort(); return a.length===2&&b.length===2&&a[0]===b[0]&&a[1]===b[1]; })();
     const scRight = res&&res.topscorer&&myT.topscorer&&(normName(myT.topscorer).includes(normName(res.topscorer))||normName(res.topscorer).includes(normName(myT.topscorer)));
-    const mark=(ok)=> res? (ok?'<span class="t-correct">✓ +':'<span class="t-wrong">✗ '):'';
-    card.innerHTML=`
-      <div class="tourney-hdr">🏆 توقعات البطولة <span class="tourney-locked">🔒 مقفل</span></div>
+    summaryLabel='🏆 توقعات البطولة 🔒';
+    bodyHTML=`
       <div class="tourney-locked-row"><span>🏆 البطل:</span> <b>${myT.champion||'—'}</b> ${res?(champRight?'<span class="t-correct">✓ +10</span>':'<span class="t-wrong">✗</span>'):''}</div>
       <div class="tourney-locked-row"><span>⚔️ طرفا النهائي:</span> <b>${(myT.finalists||[]).join(' و ')||'—'}</b> ${res?(finRight?'<span class="t-correct">✓ +5</span>':'<span class="t-wrong">✗</span>'):''}</div>
       <div class="tourney-locked-row"><span>⚽ الهداف:</span> <b>${myT.topscorer||'—'}</b> ${res?(scRight?'<span class="t-correct">✓ +5</span>':'<span class="t-wrong">✗</span>'):''}</div>`;
-    return card;
   }
-
   // إذا أُغلق الباب ولم يتوقّع
-  if(closed && !myT){
-    card.innerHTML=`<div class="tourney-hdr">🏆 توقعات البطولة <span class="tourney-locked">🔒 أُغلق الباب</span></div>
-      <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:8px">انتهى وقت توقعات البطولة (أُغلقت بنهاية دور المجموعات).</div>`;
-    return card;
+  else if(closed && !myT){
+    summaryLabel='🏆 توقعات البطولة 🔒';
+    bodyHTML=`<div style="font-size:.82rem;color:var(--muted);text-align:center;padding:8px">انتهى وقت توقعات البطولة (أُغلقت بنهاية دور المجموعات).</div>`;
+  }
+  // نموذج الإدخال (مفتوح)
+  else {
+    bodyHTML=`
+      <div class="tourney-note">توقّع مرة واحدة فقط · يُقفل نهائياً بعد الحفظ · آخر موعد: نهاية دور المجموعات</div>
+      <div class="tourney-field">
+        <label>🏆 بطل كأس العالم <span class="t-pts">10 نقاط</span></label>
+        <select id="t-champion">${teamOpts(myT?.champion)}</select>
+      </div>
+      <div class="tourney-field">
+        <label>⚔️ طرفا النهائي <span class="t-pts">5 نقاط (يجب تطابق الاثنين)</span></label>
+        <div style="display:flex;gap:8px">
+          <select id="t-final1" style="flex:1">${teamOpts(myT?.finalists?.[0])}</select>
+          <select id="t-final2" style="flex:1">${teamOpts(myT?.finalists?.[1])}</select>
+        </div>
+      </div>
+      <div class="tourney-field">
+        <label>⚽ هداف كأس العالم <span class="t-pts">5 نقاط</span></label>
+        <input id="t-scorer" value="${myT?.topscorer||''}" placeholder="اسم اللاعب">
+      </div>
+      <button class="tourney-save" onclick="saveTourney()">🔒 حفظ وإقفال توقعاتي</button>`;
   }
 
-  // نموذج الإدخال (مفتوح)
-  const dl=tourneyDeadline();
-  card.innerHTML=`
-    <div class="tourney-hdr">🏆 توقعات البطولة</div>
-    <div class="tourney-note">توقّع مرة واحدة فقط · يُقفل نهائياً بعد الحفظ · آخر موعد: نهاية دور المجموعات</div>
-    <div class="tourney-field">
-      <label>🏆 بطل كأس العالم <span class="t-pts">10 نقاط</span></label>
-      <select id="t-champion">${teamOpts(myT?.champion)}</select>
-    </div>
-    <div class="tourney-field">
-      <label>⚔️ طرفا النهائي <span class="t-pts">5 نقاط (يجب تطابق الاثنين)</span></label>
-      <div style="display:flex;gap:8px">
-        <select id="t-final1" style="flex:1">${teamOpts(myT?.finalists?.[0])}</select>
-        <select id="t-final2" style="flex:1">${teamOpts(myT?.finalists?.[1])}</select>
-      </div>
-    </div>
-    <div class="tourney-field">
-      <label>⚽ هداف كأس العالم <span class="t-pts">5 نقاط</span></label>
-      <input id="t-scorer" value="${myT?.topscorer||''}" placeholder="اسم اللاعب">
-    </div>
-    <button class="tourney-save" onclick="saveTourney()">🔒 حفظ وإقفال توقعاتي</button>`;
-  return card;
+  details.innerHTML=`<summary class="tourney-summary"><span>${summaryLabel}</span><span class="chevron">▾</span></summary><div class="tourney-body">${bodyHTML}</div>`;
+  return details;
 }
 
 async function saveTourney(){
@@ -1033,10 +1042,7 @@ function renderMatches(){
     });
   };
 
-  // أولاً: المباريات القادمة والمفتوحة (ظاهرة مباشرة)
-  renderGroups(upcoming, c);
-
-  // ثانياً: المباريات المنتهية داخل قائمة منسدلة (مغلقة افتراضياً)
+  // أولاً: المباريات المنتهية داخل قائمة منسدلة (مغلقة افتراضياً) — في الأعلى
   if(finished.length){
     const details=document.createElement('details');
     details.className='finished-details';
@@ -1050,6 +1056,9 @@ function renderMatches(){
     details.appendChild(inner);
     c.appendChild(details);
   }
+
+  // ثانياً: المباريات القادمة والمفتوحة (ظاهرة مباشرة)
+  renderGroups(upcoming, c);
 }
 
 function buildCard(m){
@@ -1442,7 +1451,8 @@ function renderAdminMatches(){
   const n=now();
   let list=MATCHES.filter(m=>{ const ko=new Date(m.ko); return adminFilter==='all'||(n>ko&&!DB.results[m.id]); });
   if(!list.length){ document.getElementById('admin-matches').innerHTML=`<div style="color:var(--muted);padding:12px;font-size:.85rem">لا توجد مباريات في هذا التصنيف</div>`; return; }
-  document.getElementById('admin-matches').innerHTML=list.map(m=>{
+
+  const buildItem=(m)=>{
     const r=DB.results[m.id];
     const badges=(r?`<span class="result-badge">${r.h}-${r.a}</span>`:'')+(r?.auto?`<span class="auto-badge">🌐 تلقائي</span>`:'');
     return `<div class="admin-match-item">
@@ -1457,7 +1467,21 @@ function renderAdminMatches(){
         ${r?`<button class="btn-danger" onclick="adminDel('${m.id}')">حذف</button>`:''}
       </div>
     </div>`;
-  }).join('');
+  };
+
+  // الفصل: مباريات بلا نتيجة (تحتاج إدخالاً) فوق، والتي لها نتيجة داخل قائمة منسدلة
+  const needEntry=list.filter(m=>!DB.results[m.id]);
+  const haveResult=list.filter(m=>DB.results[m.id]);
+
+  let html='';
+  if(needEntry.length) html+=needEntry.map(buildItem).join('');
+  if(haveResult.length){
+    html+=`<details class="admin-finished-details">
+      <summary class="admin-finished-summary"><span>✅ المباريات المُدخلة نتائجها (${haveResult.length})</span><span class="chevron">▾</span></summary>
+      <div style="padding-top:8px">${haveResult.map(buildItem).join('')}</div>
+    </details>`;
+  }
+  document.getElementById('admin-matches').innerHTML=html;
 }
 
 async function adminSave(id){
