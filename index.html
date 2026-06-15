@@ -148,6 +148,13 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .all-preds-section{margin-top:10px}
 .all-preds-title{font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:7px}
 .all-preds-details{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.finished-details{margin-top:20px}
+.finished-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:1rem;font-weight:800;color:var(--gold);padding:14px 18px;background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(10,22,40,.4));border:1.5px solid rgba(201,168,76,.3);border-radius:14px;user-select:none}
+.finished-summary::-webkit-details-marker{display:none}
+.finished-summary .chevron{transition:transform .25s;font-size:1.1rem;color:var(--muted)}
+.finished-details[open] .finished-summary{border-radius:14px 14px 0 0;margin-bottom:0}
+.finished-details[open] .finished-summary .chevron{transform:rotate(180deg)}
+.finished-inner{border:1.5px solid rgba(201,168,76,.12);border-top:none;border-radius:0 0 14px 14px;padding:12px}
 .all-preds-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:.78rem;font-weight:700;color:var(--gold);padding:8px 12px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);border-radius:9px;user-select:none}
 .all-preds-summary::-webkit-details-marker{display:none}
 .all-preds-summary .chevron{transition:transform .25s;font-size:.9rem;color:var(--muted)}
@@ -1002,21 +1009,47 @@ function renderMatches(){
     const tc=buildTourneyCard();
     if(tc) c.appendChild(tc);
   }
-  const days={};
-  MATCHES.forEach(m=>{
-    const d=mkt(m.ko), dk=`${m.stage}__${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
-    if(!days[dk]) days[dk]={stage:m.stage,date:formatDate(m.ko),ms:[]};
-    days[dk].ms.push(m);
-  });
   const icons={'دور المجموعات':'⚽','دور الـ32':'⚔️','دور الـ16':'🏆','ربع النهائي':'🌟','نصف النهائي':'🔥','المركز الثالث':'🥉','النهائي':'🏆'};
-  let lastStage='';
-  Object.values(days).forEach(day=>{
-    if(day.stage!==lastStage){ const s=document.createElement('div'); s.className='stage-title'; s.innerHTML=`${icons[day.stage]||'⚽'} ${day.stage}`; c.appendChild(s); lastStage=day.stage; }
-    const sec=document.createElement('div'); sec.className='day-section';
-    sec.innerHTML=`<div class="day-header"><span>📅</span><h3>${day.date}</h3></div>`;
-    day.ms.forEach(m=>sec.appendChild(buildCard(m)));
-    c.appendChild(sec);
-  });
+
+  // تقسيم: المباريات المنتهية على حدة، والباقي (قادمة/مفتوحة/قريباً) على حدة
+  const upcoming=[], finished=[];
+  MATCHES.forEach(m=>{ (matchStatus(m)==='completed'?finished:upcoming).push(m); });
+
+  // دالة مساعدة لبناء مجموعات الأيام داخل حاوية
+  const renderGroups=(matches, container)=>{
+    const days={};
+    matches.forEach(m=>{
+      const d=mkt(m.ko), dk=`${m.stage}__${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+      if(!days[dk]) days[dk]={stage:m.stage,date:formatDate(m.ko),ms:[]};
+      days[dk].ms.push(m);
+    });
+    let lastStage='';
+    Object.values(days).forEach(day=>{
+      if(day.stage!==lastStage){ const s=document.createElement('div'); s.className='stage-title'; s.innerHTML=`${icons[day.stage]||'⚽'} ${day.stage}`; container.appendChild(s); lastStage=day.stage; }
+      const sec=document.createElement('div'); sec.className='day-section';
+      sec.innerHTML=`<div class="day-header"><span>📅</span><h3>${day.date}</h3></div>`;
+      day.ms.forEach(m=>sec.appendChild(buildCard(m)));
+      container.appendChild(sec);
+    });
+  };
+
+  // أولاً: المباريات القادمة والمفتوحة (ظاهرة مباشرة)
+  renderGroups(upcoming, c);
+
+  // ثانياً: المباريات المنتهية داخل قائمة منسدلة (مغلقة افتراضياً)
+  if(finished.length){
+    const details=document.createElement('details');
+    details.className='finished-details';
+    const summary=document.createElement('summary');
+    summary.className='finished-summary';
+    summary.innerHTML=`<span>🏁 المباريات المنتهية (${finished.length})</span><span class="chevron">▾</span>`;
+    details.appendChild(summary);
+    const inner=document.createElement('div');
+    inner.className='finished-inner';
+    renderGroups(finished, inner);
+    details.appendChild(inner);
+    c.appendChild(details);
+  }
 }
 
 function buildCard(m){
