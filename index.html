@@ -950,6 +950,9 @@ function buildTourneyCard(){
 
   const details=document.createElement('details');
   details.className='tourney-card';
+  // الإبقاء على حالة الفتح عبر إعادة الرسم
+  if(window._tourneyOpen) details.open=true;
+  details.addEventListener('toggle',()=>{ window._tourneyOpen=details.open; });
   let bodyHTML='';
   let summaryLabel='🏆 توقعات البطولة';
 
@@ -1046,6 +1049,8 @@ function renderMatches(){
   if(finished.length){
     const details=document.createElement('details');
     details.className='finished-details';
+    if(window._finishedOpen) details.open=true;
+    details.addEventListener('toggle',()=>{ window._finishedOpen=details.open; });
     const summary=document.createElement('summary');
     summary.className='finished-summary';
     summary.innerHTML=`<span>🏁 المباريات المنتهية (${finished.length})</span><span class="chevron">▾</span>`;
@@ -1703,7 +1708,13 @@ async function checkLive(manual=false){
 async function autoRefresh(){
   if(!currentUser)return;
   try{ await loadDB(); }catch(e){ return; }
-  renderMatches(); renderLeaderboard();
+  // لا تُعد بناء المباريات إذا كان المشارك يكتب/يختار داخل أي حقل — لمنع فقدان ما يُدخله
+  const ae = document.activeElement;
+  const typing = ae && (ae.tagName==='INPUT' || ae.tagName==='SELECT' || ae.tagName==='TEXTAREA');
+  if(!typing){
+    renderMatches();
+  }
+  renderLeaderboard();
   if(currentUser?.isAdmin){ if(document.getElementById('tab-admin').classList.contains('active')) renderAdmin(); else updateLiveUI(); }
 }
 
