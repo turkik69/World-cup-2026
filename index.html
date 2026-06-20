@@ -1695,7 +1695,14 @@ async function checkLive(manual=false){
     });
 
     if(n>0){
-      await saveResults(); renderMatches(); renderLeaderboard();
+      await saveResults();
+      // لا تُعد بناء المباريات إذا كان المشارك يكتب أو قائمة البطولة مفتوحة غير محفوظة
+      const ae=document.activeElement;
+      const typing=ae&&(ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA');
+      const myT=DB.tourneyPreds?.[currentUser?.username];
+      const tourneyUnsaved=!!document.querySelector('.tourney-card[open]')&&!(myT&&myT.locked);
+      if(!typing&&!tourneyUnsaved) renderMatches();
+      renderLeaderboard();
       if(currentUser?.isAdmin)renderAdmin();
       toast(`🔄 ${n} نتيجة جديدة: ${names[0].m.home} ${names[0].h}-${names[0].a} ${names[0].m.away}`);
       liveStatus.lastFound=Date.now();
@@ -1708,10 +1715,15 @@ async function checkLive(manual=false){
 async function autoRefresh(){
   if(!currentUser)return;
   try{ await loadDB(); }catch(e){ return; }
-  // لا تُعد بناء المباريات إذا كان المشارك يكتب/يختار داخل أي حقل — لمنع فقدان ما يُدخله
+  // لا تُعد بناء المباريات في أيٍّ من هذه الحالات (لمنع فقدان التوقعات قيد الإدخال):
+  // 1) المشارك يكتب/يختار داخل حقل
+  // 2) قائمة توقعات البطولة مفتوحة ولم تُحفظ بعد
   const ae = document.activeElement;
   const typing = ae && (ae.tagName==='INPUT' || ae.tagName==='SELECT' || ae.tagName==='TEXTAREA');
-  if(!typing){
+  const tourneyCardOpen = !!document.querySelector('.tourney-card[open]');
+  const myT = DB.tourneyPreds?.[currentUser.username];
+  const tourneyUnsaved = tourneyCardOpen && !(myT && myT.locked);
+  if(!typing && !tourneyUnsaved){
     renderMatches();
   }
   renderLeaderboard();
