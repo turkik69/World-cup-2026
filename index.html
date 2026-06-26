@@ -1062,16 +1062,22 @@ function renderMatches(){
   const upcoming=[], finished=[];
   MATCHES.forEach(m=>{ (matchStatus(m)==='completed'?finished:upcoming).push(m); });
 
-  // دالة مساعدة لبناء مجموعات الأيام داخل حاوية
-  const renderGroups=(matches, container)=>{
+  // دالة مساعدة لبناء مجموعات الأيام داخل حاوية (reverse=true يرتّب من الأحدث للأقدم)
+  const renderGroups=(matches, container, reverse=false)=>{
     const days={};
     matches.forEach(m=>{
       const d=mkt(m.ko), dk=`${m.stage}__${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
       if(!days[dk]) days[dk]={stage:m.stage,date:formatDate(m.ko),ms:[]};
       days[dk].ms.push(m);
     });
+    let dayList=Object.values(days);
+    if(reverse){
+      // اعكس ترتيب الأيام، واعكس المباريات داخل كل يوم (الأحدث انتهاءً أولاً)
+      dayList=dayList.reverse();
+      dayList.forEach(day=>{ day.ms.sort((a,b)=>new Date(b.ko)-new Date(a.ko)); });
+    }
     let lastStage='';
-    Object.values(days).forEach(day=>{
+    dayList.forEach(day=>{
       if(day.stage!==lastStage){ const s=document.createElement('div'); s.className='stage-title'; s.innerHTML=`${icons[day.stage]||'⚽'} ${day.stage}`; container.appendChild(s); lastStage=day.stage; }
       const sec=document.createElement('div'); sec.className='day-section';
       sec.innerHTML=`<div class="day-header"><span>📅</span><h3>${day.date}</h3></div>`;
@@ -1080,7 +1086,7 @@ function renderMatches(){
     });
   };
 
-  // أولاً: المباريات المنتهية داخل قائمة منسدلة (مغلقة افتراضياً) — في الأعلى
+  // أولاً: المباريات المنتهية داخل قائمة منسدلة (مغلقة افتراضياً) — في الأعلى، الأحدث أولاً
   if(finished.length){
     const details=document.createElement('details');
     details.className='finished-details';
@@ -1092,12 +1098,12 @@ function renderMatches(){
     details.appendChild(summary);
     const inner=document.createElement('div');
     inner.className='finished-inner';
-    renderGroups(finished, inner);
+    renderGroups(finished, inner, true);
     details.appendChild(inner);
     c.appendChild(details);
   }
 
-  // ثانياً: المباريات القادمة والمفتوحة (ظاهرة مباشرة)
+  // ثانياً: المباريات القادمة والمفتوحة (ظاهرة مباشرة، بترتيبها الزمني الطبيعي)
   renderGroups(upcoming, c);
 }
 
@@ -1344,9 +1350,12 @@ function openProfile(username){
   const order=['دور المجموعات','دور الـ32','دور الـ16','ربع النهائي','نصف النهائي','المركز الثالث','النهائي'];
   let html='';
   if(isAdmin && !isMe){ html+=`<div style="padding:8px 12px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:8px;font-size:.78rem;color:#c4b5fd;margin-bottom:12px">🛡️ عرض المشرف — جميع التوقعات مرئية لك بما فيها المباريات القادمة</div>`; }
-  [...order.filter(s=>byStage[s]),...Object.keys(byStage).filter(s=>!order.includes(s))].forEach(stage=>{
+  // ترتيب المراحل من الأحدث (النهائي) إلى الأقدم (المجموعات) ليرى المشارك أحدث مبارياته أولاً
+  const stagesOrdered=[...order.filter(s=>byStage[s]),...Object.keys(byStage).filter(s=>!order.includes(s))].reverse();
+  stagesOrdered.forEach(stage=>{
     html+=`<div class="d-stage">${stage}</div>`;
-    byStage[stage].forEach(({m,pred})=>{
+    // داخل كل مرحلة: الأحدث انتهاءً أولاً
+    byStage[stage].sort((a,b)=>new Date(b.m.ko)-new Date(a.m.ko)).forEach(({m,pred})=>{
       const res=DB.results[m.id], v=pts(pred,res), me=username===currentUser?.username;
       const status=matchStatus(m);
       let badge='', border='';
