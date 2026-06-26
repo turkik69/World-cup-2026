@@ -210,6 +210,14 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .last-bubble::after{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);border-width:4px 4px 4px 0;border-style:solid;border-color:transparent #fff transparent transparent}
 @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .last-row td{background:rgba(224,52,52,.04)}
+.ko-extra{margin-top:12px;padding:12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.25);border-radius:10px}
+.ko-note{font-size:.72rem;color:#a78bfa;margin-bottom:10px;line-height:1.5}
+.ko-field{margin-bottom:10px}
+.ko-field label{display:block;font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:5px}
+.ko-field select{width:100%;padding:9px 12px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:.85rem;outline:none}
+.ko-field select:focus{border-color:var(--gold)}
+.ko-bonus{background:rgba(124,58,237,.15);color:#a78bfa;font-size:.7rem;font-weight:900;padding:2px 8px;border-radius:10px}
+.admin-ko-row{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
 #profile-badges-bar{padding:0 20px 6px}
 .profile-badges{display:flex;flex-wrap:wrap;gap:6px}
 .profile-badge{font-size:.72rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:4px 11px}
@@ -396,6 +404,13 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
         <div class="rule-item"><div class="rule-pts r3">3</div><div><div class="rule-desc">توقع دقيق للنتيجة الكاملة</div><div class="rule-sub">مثال: توقعت 2-1 وانتهت 2-1 ✅</div></div></div>
         <div class="rule-item"><div class="rule-pts r1">1</div><div><div class="rule-desc">توقع صحيح للفائز بنتيجة مختلفة</div><div class="rule-sub">مثال: توقعت 2-0 وانتهت 3-1 أو تعادل بتعادل ✅</div></div></div>
         <div class="rule-item"><div class="rule-pts r0">0</div><div><div class="rule-desc">توقع خاطئ</div><div class="rule-sub">مثال: توقعت فوز فريق وفاز الآخر ❌</div></div></div>
+      </div>
+      <div class="rules-box">
+        <h3>⚔️ الأدوار الإقصائية (من دور الـ32)</h3>
+        <div class="rule-item"><div class="rule-pts r3">3</div><div><div class="rule-desc">نقاط الوقت الأصلي كالمعتاد</div><div class="rule-sub">3 للتوقع الدقيق · 1 للفائز/التعادل الصحيح · 0 للخطأ (90 دقيقة)</div></div></div>
+        <div class="rule-item"><div class="rule-pts" style="background:rgba(124,58,237,.2);color:#a78bfa">+1</div><div><div class="rule-desc">توقع الأشواط الإضافية</div><div class="rule-sub">تظهر الخانة فقط إذا توقّعت تعادلاً في الوقت الأصلي · +1 إذا أصبت من يحسمها في الإضافي أو استمرار التعادل</div></div></div>
+        <div class="rule-item"><div class="rule-pts" style="background:rgba(124,58,237,.2);color:#a78bfa">+1</div><div><div class="rule-desc">توقع الفائز بضربات الترجيح</div><div class="rule-sub">تظهر فقط إذا توقّعت استمرار التعادل في الإضافي · +1 إذا أصبت الفائز بالترجيح</div></div></div>
+        <div class="rule-item" style="border:none"><div class="rule-pts" style="background:rgba(74,222,128,.2);color:#4ade80">5</div><div><div class="rule-desc">مثال على الحد الأقصى</div><div class="rule-sub">تعادل دقيق (3) + إضافي صحيح (1) + ترجيح صحيح (1) = 5 نقاط 🎯 · ملاحظة: لو توقّعت فوز فريق في الإضافي تُغلق خانة الترجيح</div></div></div>
       </div>
       <div class="rules-box">
         <h3>🏆 توقعات البطولة (مرة واحدة قبل نهاية دور المجموعات)</h3>
@@ -800,9 +815,29 @@ function formatDate(iso){ const d=mkt(iso); const days=['الأحد','الاثن
 function formatTime(iso){ const d=mkt(iso); return `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} مسقط`; }
 function outcome(h,a){ return h>a?'h':a>h?'a':'d'; }
 function pts(pred,res){ if(!res||!pred)return null; const ph=+pred.h,pa=+pred.a; if(ph===res.h&&pa===res.a)return 3; if(outcome(ph,pa)===outcome(res.h,res.a))return 1; return 0; }
+// مباراة إقصائية؟ (كل ما ليس دور المجموعات)
+function isKnockout(m){ return m && m.stage && m.stage!=='دور المجموعات'; }
+// نقاط الإضافي والترجيح (للإقصائيات فقط، تُضاف فوق نقاط الوقت الأصلي)
+// pred.et = 'h'/'a'/'draw' (من يفوز بالإضافي أو استمرار التعادل)، pred.pk = 'h'/'a' (الفائز بالترجيح)
+// res.et = 'h'/'a'/'draw'، res.pk = 'h'/'a'
+function knockoutBonus(pred,res){
+  if(!res||!pred) return 0;
+  // الإضافي يُحتسب فقط إذا توقّع المشارك تعادلاً في الوقت الأصلي (لأن الخانة تظهر حينها فقط)
+  if(outcome(+pred.h,+pred.a)!=='d') return 0;
+  if(!pred.et || !res.et) return 0;
+  let bonus=0;
+  if(pred.et===res.et){
+    bonus+=1; // توقع الإضافي صحيح
+    // الترجيح يُحتسب فقط إذا توقّع استمرار التعادل وصحّ، ثم توقّع الفائز بالترجيح
+    if(pred.et==='draw' && res.et==='draw' && pred.pk && res.pk && pred.pk===res.pk){
+      bonus+=1;
+    }
+  }
+  return bonus;
+}
 // تطبيع اسم اللاعب للمقارنة (إزالة مسافات/تشكيل بسيط)
 function normName(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,' ').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه'); }
-function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){ s+=(pts(pred,r)||0); } }); s+=tourneyPts(u); return s; }
+function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){ s+=(pts(pred,r)||0)+knockoutBonus(pred,r); } }); s+=tourneyPts(u); return s; }
 // قائمة كل المنتخبات المشاركة (مرتبة أبجدياً) مع علم كل منتخب
 function allTeams(){
   const map={};
@@ -1090,6 +1125,29 @@ function buildCard(m){
   let predHTML='';
   if(status==='open'){
     const ph=myPred?.h??0, pa=myPred?.a??0;
+    const ko=isKnockout(m);
+    const etSel=myPred?.et||'', pkSel=myPred?.pk||'';
+    const koHTML = ko ? `
+      <div class="ko-extra" id="koextra_${m.id}">
+        <div class="ko-note">⚔️ مباراة إقصائية: إذا توقّعت <b>تعادلاً</b> في الوقت الأصلي، اختر ما يحدث بعده</div>
+        <div class="ko-field" id="etfield_${m.id}">
+          <label>الأشواط الإضافية <span class="t-pts">+1 للصحيح</span></label>
+          <select id="et_${m.id}" onchange="onEtChange('${m.id}')">
+            <option value="">— اختر —</option>
+            <option value="h" ${etSel==='h'?'selected':''}>فوز ${m.home}</option>
+            <option value="a" ${etSel==='a'?'selected':''}>فوز ${m.away}</option>
+            <option value="draw" ${etSel==='draw'?'selected':''}>يستمر التعادل (ترجيح)</option>
+          </select>
+        </div>
+        <div class="ko-field" id="pkfield_${m.id}" style="display:${etSel==='draw'?'block':'none'}">
+          <label>الفائز بضربات الترجيح <span class="t-pts">+1 للصحيح</span></label>
+          <select id="pk_${m.id}">
+            <option value="">— اختر —</option>
+            <option value="h" ${pkSel==='h'?'selected':''}>${m.home}</option>
+            <option value="a" ${pkSel==='a'?'selected':''}>${m.away}</option>
+          </select>
+        </div>
+      </div>` : '';
     predHTML=`<div class="prediction-area">
       <div class="pred-label">🎯 يُغلق التوقع في: ${formatTime(new Date(new Date(m.ko).getTime()-3600*1000).toISOString())}</div>
       <div class="score-inputs">
@@ -1099,6 +1157,7 @@ function buildCard(m){
         <div class="score-input-wrap"><button onclick="adj('${m.id}','h',-1)">−</button><input class="score-num" type="number" id="h_${m.id}" value="${ph}" min="0" max="20" oninput="clamp(this)"><button onclick="adj('${m.id}','h',1)">+</button></div>
         <span style="font-size:.7rem;color:var(--muted)">${m.home}</span>
       </div>
+      ${koHTML}
       <button class="save-pred-btn" onclick="savePred('${m.id}')">حفظ التوقع ✓</button>
     </div>`;
   } else if(done){
@@ -1109,7 +1168,15 @@ function buildCard(m){
       if(myPts===3) badge=`<span class="pts-badge pts-3">+3 🎯</span>`;
       else if(myPts===1) badge=`<span class="pts-badge pts-1">+1 ✓</span>`;
       else badge=`<span class="pts-badge pts-0">0 ✗</span>`;
-      mySection=`<div class="my-pred-display"><div><div class="pred-mine-label">توقعي</div><div class="pred-mine-score">${m.home} ${myPred.h}-${myPred.a} ${m.away}</div></div><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}</div></div>`;
+      const kb=knockoutBonus(myPred,result);
+      const kbHTML=kb>0?`<span class="ko-bonus">⚔️ +${kb} إضافي/ترجيح</span>`:'';
+      // وصف توقع الإضافي/الترجيح إن وُجد
+      let etShow='';
+      if(isKnockout(m)&&myPred.et){
+        const etTxt=myPred.et==='draw'?`ترجيح لـ ${myPred.pk==='h'?m.home:myPred.pk==='a'?m.away:'؟'}`:(myPred.et==='h'?`إضافي: ${m.home}`:`إضافي: ${m.away}`);
+        etShow=`<div style="font-size:.68rem;color:var(--muted);margin-top:3px">⚔️ ${etTxt}</div>`;
+      }
+      mySection=`<div class="my-pred-display"><div><div class="pred-mine-label">توقعي</div><div class="pred-mine-score">${m.home} ${myPred.h}-${myPred.a} ${m.away}</div>${etShow}</div><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}${kbHTML}</div></div>`;
     }
     // show ALL predictions
     const allRows=Object.entries(DB.predictions)
@@ -1146,13 +1213,26 @@ function buildCard(m){
 
 function adj(id,side,d){ const i=document.getElementById(side+'_'+id); if(!i)return; i.value=Math.max(0,Math.min(20,(+i.value||0)+d)); }
 function clamp(i){ const v=+i.value; if(isNaN(v)||v<0)i.value=0; else if(v>20)i.value=20; }
+// عند تغيير اختيار الإضافي: أظهر خانة الترجيح فقط إذا اختار "يستمر التعادل"
+function onEtChange(id){
+  const et=document.getElementById('et_'+id)?.value;
+  const pkField=document.getElementById('pkfield_'+id);
+  if(pkField) pkField.style.display=(et==='draw')?'block':'none';
+}
 
 async function savePred(id){
   const h=Math.max(0,+document.getElementById('h_'+id)?.value||0);
   const a=Math.max(0,+document.getElementById('a_'+id)?.value||0);
   const u=currentUser.username;
   if(!DB.predictions[u]) DB.predictions[u]={};
-  DB.predictions[u][id]={h,a};
+  const rec={h,a};
+  // الإقصائيات: احفظ توقع الإضافي/الترجيح فقط إذا توقّع تعادلاً
+  const etEl=document.getElementById('et_'+id);
+  if(etEl && outcome(h,a)==='d'){
+    const et=etEl.value;
+    if(et){ rec.et=et; if(et==='draw'){ const pk=document.getElementById('pk_'+id)?.value; if(pk) rec.pk=pk; } }
+  }
+  DB.predictions[u][id]=rec;
   const ok = await savePrediction(u);
   const m=MATCHES.find(x=>x.id===id);
   if(ok){
@@ -1460,6 +1540,23 @@ function renderAdminMatches(){
   const buildItem=(m)=>{
     const r=DB.results[m.id];
     const badges=(r?`<span class="result-badge">${r.h}-${r.a}</span>`:'')+(r?.auto?`<span class="auto-badge">🌐 تلقائي</span>`:'');
+    const ko=isKnockout(m);
+    const koAdmin = ko ? `
+      <div class="admin-ko-row">
+        <label class="admin-t-label" style="margin-top:6px">⚔️ نتيجة الأشواط الإضافية (للإقصائيات)</label>
+        <select class="admin-t-inp" id="aet_${m.id}">
+          <option value="">— لم تذهب لإضافي —</option>
+          <option value="h" ${r?.et==='h'?'selected':''}>فاز ${m.home} في الإضافي</option>
+          <option value="a" ${r?.et==='a'?'selected':''}>فاز ${m.away} في الإضافي</option>
+          <option value="draw" ${r?.et==='draw'?'selected':''}>تعادل ← ترجيح</option>
+        </select>
+        <label class="admin-t-label">🥅 الفائز بضربات الترجيح</label>
+        <select class="admin-t-inp" id="apk_${m.id}">
+          <option value="">— لا ترجيح —</option>
+          <option value="h" ${r?.pk==='h'?'selected':''}>${m.home}</option>
+          <option value="a" ${r?.pk==='a'?'selected':''}>${m.away}</option>
+        </select>
+      </div>` : '';
     return `<div class="admin-match-item">
       <div class="admin-match-title">${badges}${m.home} vs ${m.away} · ${formatDate(m.ko)}</div>
       <div class="admin-score-row">
@@ -1471,6 +1568,7 @@ function renderAdminMatches(){
         <button class="btn-admin" onclick="adminSave('${m.id}')">حفظ</button>
         ${r?`<button class="btn-danger" onclick="adminDel('${m.id}')">حذف</button>`:''}
       </div>
+      ${koAdmin}
     </div>`;
   };
 
@@ -1494,7 +1592,14 @@ async function adminSave(id){
   const a=parseInt(document.getElementById('aa_'+id)?.value);
   if(isNaN(h)||isNaN(a)||h<0||a<0){ toast('أدخل نتيجة صحيحة'); return; }
   const prev=DB.results[id]||{};
-  DB.results[id]={h,a,auto:prev.auto||false};
+  const rec={h,a,auto:prev.auto||false};
+  // الإقصائيات: احفظ نتيجة الإضافي والترجيح
+  const etEl=document.getElementById('aet_'+id);
+  if(etEl){
+    const et=etEl.value;
+    if(et){ rec.et=et; if(et==='draw'){ const pk=document.getElementById('apk_'+id)?.value; if(pk) rec.pk=pk; } }
+  }
+  DB.results[id]=rec;
   await saveResult(id);
   toast('✅ تم حفظ النتيجة'); renderAdmin(); renderMatches(); renderLeaderboard();
 }
