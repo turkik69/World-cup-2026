@@ -643,7 +643,7 @@ const MATCHES = [
 // ════════════════════════════════════════════
 const FB_URL = 'https://world-cup-2026-d3091-default-rtdb.europe-west1.firebasedatabase.app';
 
-let DB = { users:{}, predictions:{}, results:{}, tourneyPreds:{}, tourneyResults:null, goldenMatch:null };
+let DB = { users:{}, predictions:{}, results:{}, tourneyPreds:{}, tourneyResults:null, goldenMatch:null, bracket:{} };
 let currentUser = null;
 let adminFilter = 'pending';
 let liveStatus = { state:'idle', checking:false, lastCheck:null, lastFound:null };
@@ -669,7 +669,7 @@ async function fbPatch(path,val){
 }
 
 async function loadDB(){
-  const [u,p,r,tp,tr,gm] = await Promise.all([fbGet('users'),fbGet('predictions'),fbGet('results'),fbGet('tourneyPreds'),fbGet('tourneyResults'),fbGet('goldenMatch')]);
+  const [u,p,r,tp,tr,gm,br] = await Promise.all([fbGet('users'),fbGet('predictions'),fbGet('results'),fbGet('tourneyPreds'),fbGet('tourneyResults'),fbGet('goldenMatch'),fbGet('bracket')]);
   // فشل الاتصال
   if(u===undefined && p===undefined && r===undefined){
     document.getElementById('loading-overlay').innerHTML=`<div style="text-align:center;padding:40px;max-width:420px">
@@ -686,6 +686,12 @@ async function loadDB(){
   DB.tourneyPreds = tp || {};
   DB.tourneyResults = tr || null;
   DB.goldenMatch = gm || null;
+  DB.bracket = br || {};
+  // طبّق تحديثات الجدول (الفرق المتأهلة لدور الـ16) على MATCHES
+  Object.entries(DB.bracket).forEach(([mid,data])=>{
+    const mm=MATCHES.find(x=>x.id===mid);
+    if(mm){ if(data.home){mm.home=data.home;mm.hf=data.hf;} if(data.away){mm.away=data.away;mm.af=data.af;} }
+  });
   // ضمان حساب المشرف
   if(!DB.users[ADMIN_USER]){
     DB.users[ADMIN_USER]={pass:ADMIN_PASS,name:ADMIN_NAME,admin:true,at:Date.now()};
@@ -823,6 +829,51 @@ function outcome(h,a){ return h>a?'h':a>h?'a':'d'; }
 function pts(pred,res){ if(!res||!pred)return null; const ph=+pred.h,pa=+pred.a; if(ph===res.h&&pa===res.a)return 3; if(outcome(ph,pa)===outcome(res.h,res.a))return 1; return 0; }
 // مباراة إقصائية؟ (كل ما ليس دور المجموعات)
 function isKnockout(m){ return m && m.stage && m.stage!=='دور المجموعات'; }
+// خريطة تأهل دور الـ32 → دور الـ16 (حسب bracket فيفا الرسمي)
+// كل مباراة r32 → [مباراة r16 الهدف، الموضع 'home'/'away']
+const BRACKET_R32_TO_R16 = {
+  'r32_1':['r16_1','home'], 'r32_4':['r16_1','away'],
+  'r32_3':['r16_2','home'], 'r32_6':['r16_2','away'],
+  'r32_2':['r16_3','home'], 'r32_5':['r16_3','away'],
+  'r32_7':['r16_4','home'], 'r32_8':['r16_4','away'],
+  'r32_12':['r16_5','home'],'r32_11':['r16_5','away'],
+  'r32_10':['r16_6','home'],'r32_9':['r16_6','away'],
+  'r32_15':['r16_7','home'],'r32_14':['r16_7','away'],
+  'r32_13':['r16_8','home'],'r32_16':['r16_8','away'],
+};
+// يحدد الفائز من نتيجة مباراة إقصائية (مع مراعاة الإضافي والترجيح)
+function knockoutWinner(m,res){
+  if(!res) return null;
+  // الوقت الأصلي حسم النتيجة
+  if(res.h>res.a) return {name:m.home,flag:m.hf};
+  if(res.a>res.h) return {name:m.away,flag:m.af};
+  // تعادل في الوقت الأصلي → ننظر للإضافي/الترجيح
+  if(res.et==='h') return {name:m.home,flag:m.hf};
+  if(res.et==='a') return {name:m.away,flag:m.af};
+  if(res.et==='draw'){
+    if(res.pk==='h') return {name:m.home,flag:m.hf};
+    if(res.pk==='a') return {name:m.away,flag:m.af};
+  }
+  return null; // لم تُحسم بعد
+}
+// يحدّث مباراة دور الـ16 بالفريق المتأهل من دور الـ32 (يُستدعى بعد حفظ نتيجة r32)
+async function advanceBracket(r32id){
+  const map=BRACKET_R32_TO_R16[r32id];
+  if(!map) return;
+  const [r16id,slot]=map;
+  const m32=MATCHES.find(x=>x.id===r32id);
+  const m16=MATCHES.find(x=>x.id===r16id);
+  if(!m32||!m16) return;
+  const winner=knockoutWinner(m32, DB.results[r32id]);
+  if(!winner) return;
+  // حدّث الفريق وعلمه في موضعه الصحيح
+  if(slot==='home'){ m16.home=winner.name; m16.hf=winner.flag; }
+  else { m16.away=winner.name; m16.af=winner.flag; }
+  // احفظ التحديث في Firebase (نخزّن تعديلات الجدول)
+  if(!DB.bracket) DB.bracket={};
+  DB.bracket[r16id]={home:m16.home,hf:m16.hf,away:m16.away,af:m16.af};
+  await fbPatch('bracket',{[r16id]:DB.bracket[r16id]});
+}
 // نقاط الإضافي والترجيح (للإقصائيات فقط، تُضاف فوق نقاط الوقت الأصلي)
 // pred.et = 'h'/'a'/'draw' (من يفوز بالإضافي أو استمرار التعادل)، pred.pk = 'h'/'a' (الفائز بالترجيح)
 // res.et = 'h'/'a'/'draw'، res.pk = 'h'/'a'
@@ -1668,12 +1719,37 @@ async function adminSave(id){
   }
   DB.results[id]=rec;
   await saveResult(id);
+  // إذا كانت مباراة دور الـ32، حدّث دور الـ16 تلقائياً بالفريق المتأهل
+  if(BRACKET_R32_TO_R16[id]) await advanceBracket(id);
   toast('✅ تم حفظ النتيجة'); renderAdmin(); renderMatches(); renderLeaderboard();
 }
 function onAdminEtChange(id){ /* placeholder للاتساق - الترجيح يبقى ظاهراً دائماً في الإدارة */ }
 async function adminDel(id){
   delete DB.results[id]; await saveResults();
+  // إذا كانت مباراة دور الـ32، أعد موضعها في دور الـ16 إلى الحالة المؤقتة
+  if(BRACKET_R32_TO_R16[id]) await revertBracket(id);
   toast('تم حذف النتيجة'); renderAdmin(); renderMatches(); renderLeaderboard();
+}
+// أصل المسميات المؤقتة لمباريات دور الـ16 (للتراجع عند حذف نتيجة)
+const R16_DEFAULTS={
+  'r16_1':{home:'فائز م73',hf:'⚽',away:'فائز م75',af:'⚽'},
+  'r16_2':{home:'فائز م74',hf:'⚽',away:'فائز م77',af:'⚽'},
+  'r16_3':{home:'فائز م76',hf:'⚽',away:'فائز م78',af:'⚽'},
+  'r16_4':{home:'فائز م79',hf:'⚽',away:'فائز م80',af:'⚽'},
+  'r16_5':{home:'فائز م83',hf:'⚽',away:'فائز م84',af:'⚽'},
+  'r16_6':{home:'فائز م81',hf:'⚽',away:'فائز م82',af:'⚽'},
+  'r16_7':{home:'فائز م86',hf:'⚽',away:'فائز م88',af:'⚽'},
+  'r16_8':{home:'فائز م85',hf:'⚽',away:'فائز م87',af:'⚽'},
+};
+async function revertBracket(r32id){
+  const map=BRACKET_R32_TO_R16[r32id]; if(!map) return;
+  const [r16id,slot]=map;
+  const m16=MATCHES.find(x=>x.id===r16id); const def=R16_DEFAULTS[r16id];
+  if(!m16||!def) return;
+  if(slot==='home'){ m16.home=def.home; m16.hf=def.hf; } else { m16.away=def.away; m16.af=def.af; }
+  if(!DB.bracket) DB.bracket={};
+  DB.bracket[r16id]={home:m16.home,hf:m16.hf,away:m16.away,af:m16.af};
+  await fbPatch('bracket',{[r16id]:DB.bracket[r16id]});
 }
 function renderAdminPlayers(){
   const participants = Object.entries(DB.users).filter(([u,d])=>!d.admin);
