@@ -218,6 +218,7 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .ko-field select:focus{border-color:var(--gold)}
 .ko-bonus{background:rgba(124,58,237,.15);color:#a78bfa;font-size:.7rem;font-weight:900;padding:2px 8px;border-radius:10px}
 .admin-ko-row{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.admin-ko-warn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);border-radius:8px;padding:8px 11px;font-size:.72rem;color:#fbbf24;margin-bottom:8px;line-height:1.5}
 #profile-badges-bar{padding:0 20px 6px}
 .profile-badges{display:flex;flex-wrap:wrap;gap:6px}
 .profile-badge{font-size:.72rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:4px 11px}
@@ -284,6 +285,11 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
 .d-pred-row.me{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18)}
 .d-pred-teams{font-size:.8rem;font-weight:700;flex:1;line-height:1.4}
 .d-pred-actual{font-size:.72rem;color:var(--muted)}
+.d-ko-detail{font-size:.68rem;color:#a78bfa;margin-top:3px;font-weight:700}
+.d-pred-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.d-breakdown{margin-top:8px;padding:8px 10px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);border-radius:8px}
+.bd-title{font-size:.7rem;font-weight:900;color:var(--gold);margin-bottom:6px}
+.bd-step{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.72rem;color:var(--text);padding:3px 0;line-height:1.4}
 .d-pred-score{font-size:.8rem;font-weight:900;text-align:center;white-space:nowrap}
 .d-hidden-note{margin-top:14px;padding:9px 13px;background:rgba(122,143,174,.06);border:1px solid var(--border);border-radius:8px;font-size:.76rem;color:var(--muted);text-align:center}
 .d-empty{text-align:center;padding:28px;color:var(--muted);font-size:.88rem}
@@ -838,6 +844,34 @@ function knockoutBonus(pred,res){
 // تطبيع اسم اللاعب للمقارنة (إزالة مسافات/تشكيل بسيط)
 function normName(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,' ').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه'); }
 function totalPts(u){ const p=DB.predictions[u]||{}; let s=0; Object.entries(p).forEach(([id,pred])=>{ const r=DB.results[id]; if(r){ s+=(pts(pred,r)||0)+knockoutBonus(pred,r); } }); s+=tourneyPts(u); return s; }
+// مسار احتساب النقاط: يشرح كل نقطة خطوة بخطوة (للمباريات المنتهية)
+function pointsBreakdown(m,pred,res){
+  if(!res) return [];
+  const steps=[];
+  const v=pts(pred,res);
+  if(v===3) steps.push({ok:true, txt:'توقع دقيق للنتيجة (90 دقيقة)', pts:3});
+  else if(v===1) steps.push({ok:true, txt:'توقع صحيح للفائز/التعادل', pts:1});
+  else steps.push({ok:false, txt:'توقع الوقت الأصلي خاطئ', pts:0});
+  if(isKnockout(m)){
+    const predDraw = outcome(+pred.h,+pred.a)==='d';
+    if(predDraw && pred.et){
+      if(res.et){
+        if(pred.et===res.et){
+          steps.push({ok:true, txt:'توقع الأشواط الإضافية صحيح', pts:1});
+          if(pred.et==='draw' && res.et==='draw'){
+            if(pred.pk && res.pk && pred.pk===res.pk) steps.push({ok:true, txt:'توقع الفائز بالترجيح صحيح', pts:1});
+            else if(pred.pk) steps.push({ok:false, txt:'توقع الفائز بالترجيح خاطئ', pts:0});
+          }
+        } else {
+          steps.push({ok:false, txt:'توقع الأشواط الإضافية خاطئ', pts:0});
+        }
+      } else {
+        steps.push({ok:null, txt:'بانتظار إدخال نتيجة الإضافي', pts:0});
+      }
+    }
+  }
+  return steps;
+}
 // قائمة كل المنتخبات المشاركة (مرتبة أبجدياً) مع علم كل منتخب
 function allTeams(){
   const map={};
@@ -1304,7 +1338,7 @@ function renderLeaderboard(){
     ? `<button class="compare-btn" onclick="openCompare()">⚔️ قارن نفسك بمنافس</button>` : '';
 
   document.getElementById('lb-container').innerHTML=`
-    <div class="lb-hint">🔒 توقعات كل مشارك مخفية حتى انتهاء المباراة · اضغط على أي اسم لرؤية سجله</div>
+    <div class="lb-hint">🔒 توقعات كل مشارك مخفية حتى انتهاء المباراة · اضغط على أي اسم لرؤية سجله ومسار احتساب نقاطه 📊</div>
     ${compareBtn}
     <table class="lb-table"><thead><tr><th style="text-align:center;width:52px">المركز</th><th>المتسابق</th><th style="text-align:center;width:70px">النقاط</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -1358,20 +1392,43 @@ function openProfile(username){
     byStage[stage].sort((a,b)=>new Date(b.m.ko)-new Date(a.m.ko)).forEach(({m,pred})=>{
       const res=DB.results[m.id], v=pts(pred,res), me=username===currentUser?.username;
       const status=matchStatus(m);
+      const kb=res?knockoutBonus(pred,res):0;
+      const totalV=(v||0)+kb;
       let badge='', border='';
-      if(v===3){ badge=`<span class="pts-badge pts-3">+3 🎯</span>`; border='border-right:3px solid #16A34A'; }
-      else if(v===1){ badge=`<span class="pts-badge pts-1">+1 ✓</span>`; border='border-right:3px solid #0EA5E9'; }
-      else if(v===0){ badge=`<span class="pts-badge pts-0">0 ✗</span>`; border='border-right:3px solid var(--red)'; }
+      if(v===3){ badge=`<span class="pts-badge pts-3">+${totalV} 🎯</span>`; border='border-right:3px solid #16A34A'; }
+      else if(v===1){ badge=`<span class="pts-badge pts-1">+${totalV} ✓</span>`; border='border-right:3px solid #0EA5E9'; }
+      else if(v===0){ badge=`<span class="pts-badge pts-0">${totalV>0?'+'+totalV:'0'} ${totalV>0?'⚔️':'✗'}</span>`; border=`border-right:3px solid ${totalV>0?'#7C3AED':'var(--red)'}`; }
       else { badge=`<span class="pts-badge" style="background:rgba(122,143,174,.12);color:var(--muted)">⏳</span>`; }
       const predText = `${m.home} ${pred.h} - ${pred.a} ${m.away}`;
       const resText  = res ? `${m.home} ${res.h} - ${res.a} ${m.away}` : '';
+      // تفاصيل الإضافي/الترجيح
+      const etTxt=(et,pk)=>{ if(!et)return ''; if(et==='h')return `إضافي: ${m.home}`; if(et==='a')return `إضافي: ${m.away}`; if(et==='draw')return `ترجيح: ${pk==='h'?m.home:pk==='a'?m.away:'؟'}`; return ''; };
+      const predKo = (isKnockout(m)&&pred.et)?`<div class="d-ko-detail">⚔️ توقّع: ${etTxt(pred.et,pred.pk)}</div>`:'';
+      const resKo = (isKnockout(m)&&res&&res.et)?`<div class="d-ko-detail" style="color:#4ade80">⚔️ فعلي: ${etTxt(res.et,res.pk)}</div>`:'';
+      // مسار احتساب النقاط (لكل المباريات المنتهية - شفافية كاملة للجميع)
+      const steps=res?pointsBreakdown(m,pred,res):[];
+      let breakdownHTML='';
+      if(steps.length){
+        const rows=steps.map(s=>{
+          const icon=s.ok===true?'✅':s.ok===false?'❌':'⏳';
+          const ptsTxt=s.pts>0?`<b style="color:#4ade80">+${s.pts}</b>`:`<span style="color:var(--muted)">0</span>`;
+          return `<div class="bd-step"><span>${icon} ${s.txt}</span>${ptsTxt}</div>`;
+        }).join('');
+        breakdownHTML=`<div class="d-breakdown"><div class="bd-title">📊 مسار النقاط — الإجمالي: ${totalV}</div>${rows}</div>`;
+      }
       html+=`<div class="d-pred-row${me?' me':''}" style="${border}">
-        <div class="d-pred-teams">${m.hf} ${m.home} <span style="color:var(--muted);font-size:.72rem">vs</span> ${m.away} ${m.af}
-          ${res?`<div class="d-pred-actual">النتيجة: <bdi>${resText}</bdi></div>`:`<div class="d-pred-actual">${status==='completed'?'':'لم تُلعب بعد'}</div>`}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="text-align:center"><div style="font-size:.63rem;color:var(--muted)">توقع</div><div class="d-pred-score" style="color:var(--gold)"><bdi>${predText}</bdi></div></div>
-          ${badge}
+        <div style="flex:1;min-width:0">
+          <div class="d-pred-head">
+            <div class="d-pred-teams">${m.hf} ${m.home} <span style="color:var(--muted);font-size:.72rem">vs</span> ${m.away} ${m.af}
+              ${res?`<div class="d-pred-actual">النتيجة: <bdi>${resText}</bdi></div>`:`<div class="d-pred-actual">${status==='completed'?'':'لم تُلعب بعد'}</div>`}
+              ${resKo}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="text-align:center"><div style="font-size:.63rem;color:var(--muted)">توقع</div><div class="d-pred-score" style="color:var(--gold)"><bdi>${predText}</bdi></div>${predKo}</div>
+              ${badge}
+            </div>
+          </div>
+          ${breakdownHTML}
         </div>
       </div>`;
     });
@@ -1552,8 +1609,9 @@ function renderAdminMatches(){
     const ko=isKnockout(m);
     const koAdmin = ko ? `
       <div class="admin-ko-row">
+        ${r && r.h===r.a ? `<div class="admin-ko-warn">⚠️ هذه المباراة انتهت بتعادل في الوقت الأصلي — أدخل نتيجة الإضافي والترجيح ثم اضغط حفظ مجدداً لاحتساب نقاط المشاركين</div>` : ''}
         <label class="admin-t-label" style="margin-top:6px">⚔️ نتيجة الأشواط الإضافية (للإقصائيات)</label>
-        <select class="admin-t-inp" id="aet_${m.id}">
+        <select class="admin-t-inp" id="aet_${m.id}" onchange="onAdminEtChange('${m.id}')">
           <option value="">— لم تذهب لإضافي —</option>
           <option value="h" ${r?.et==='h'?'selected':''}>فاز ${m.home} في الإضافي</option>
           <option value="a" ${r?.et==='a'?'selected':''}>فاز ${m.away} في الإضافي</option>
@@ -1612,6 +1670,7 @@ async function adminSave(id){
   await saveResult(id);
   toast('✅ تم حفظ النتيجة'); renderAdmin(); renderMatches(); renderLeaderboard();
 }
+function onAdminEtChange(id){ /* placeholder للاتساق - الترجيح يبقى ظاهراً دائماً في الإدارة */ }
 async function adminDel(id){
   delete DB.results[id]; await saveResults();
   toast('تم حذف النتيجة'); renderAdmin(); renderMatches(); renderLeaderboard();
