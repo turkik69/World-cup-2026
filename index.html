@@ -454,6 +454,11 @@ main{max-width:1100px;margin:0 auto;padding:22px 16px}
           <div id="admin-matches"></div>
         </div>
         <div class="admin-sec">
+          <div class="admin-sec-title">⚔️ تحديث المتأهلين لدور الـ16</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.5">يضع الفرق الفائزة من دور الـ32 في مواقعها الصحيحة بدور الـ16 تلقائياً حسب نتائجها المُدخلة.</div>
+          <button class="btn-admin" onclick="syncBracket()" style="width:100%">🔄 تحديث جدول دور الـ16 الآن</button>
+        </div>
+        <div class="admin-sec">
           <div class="admin-sec-title">🏆 نتائج توقعات البطولة</div>
           <div id="admin-tourney"></div>
         </div>
@@ -874,7 +879,32 @@ async function advanceBracket(r32id){
   DB.bracket[r16id]={home:m16.home,hf:m16.hf,away:m16.away,af:m16.af};
   await fbPatch('bracket',{[r16id]:DB.bracket[r16id]});
 }
-// نقاط الإضافي والترجيح (للإقصائيات فقط، تُضاف فوق نقاط الوقت الأصلي)
+// تحديث شامل: يعيد بناء كل مباريات دور الـ16 من نتائج دور الـ32 الموجودة
+async function syncBracket(){
+  let count=0;
+  const updates={};
+  Object.keys(BRACKET_R32_TO_R16).forEach(r32id=>{
+    const [r16id,slot]=BRACKET_R32_TO_R16[r32id];
+    const m32=MATCHES.find(x=>x.id===r32id);
+    const m16=MATCHES.find(x=>x.id===r16id);
+    if(!m32||!m16) return;
+    const winner=knockoutWinner(m32, DB.results[r32id]);
+    if(!winner) return;
+    if(slot==='home'){ m16.home=winner.name; m16.hf=winner.flag; }
+    else { m16.away=winner.name; m16.af=winner.flag; }
+    if(!DB.bracket) DB.bracket={};
+    DB.bracket[r16id]={home:m16.home,hf:m16.hf,away:m16.away,af:m16.af};
+    updates[r16id]=DB.bracket[r16id];
+    count++;
+  });
+  if(count>0){
+    await fbPatch('bracket',updates);
+    toast(`✅ تم تحديث ${count} متأهل في دور الـ16`);
+    renderMatches();
+  } else {
+    toast('⏳ لا توجد نتائج مكتملة في دور الـ32 بعد');
+  }
+}
 // pred.et = 'h'/'a'/'draw' (من يفوز بالإضافي أو استمرار التعادل)، pred.pk = 'h'/'a' (الفائز بالترجيح)
 // res.et = 'h'/'a'/'draw'، res.pk = 'h'/'a'
 function knockoutBonus(pred,res){
